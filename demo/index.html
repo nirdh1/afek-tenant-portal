@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>פורטל הדיירים | מתחם יצחק רבין–אפק</title>
+<style>
+:root{
+  --navy:#16233f; --navy2:#2f527a; --gold:#c4a466; --gold-soft:#fbf3df;
+  --bg:#f3f4f8; --card:#fff; --text:#16233f; --muted:#5b6475; --line:#e3e6ee;
+  --tab:#e4e7ef; --ok:#2e7d4f; --warn:#b7791f;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header{background:var(--navy);color:#fff}
+header .wrap{display:flex;justify-content:space-between;align-items:center;padding-top:14px;padding-bottom:14px;gap:16px}
+header h1{font-size:20px;margin:0}
+header p{margin:2px 0 0;color:var(--gold);font-size:14px}
+.logo{background:#fff;border-radius:8px;width:110px;height:56px;display:grid;place-items:center;flex-shrink:0}
+nav{display:flex;gap:8px;margin:20px 0;flex-wrap:wrap}
+nav button{border:0;background:var(--tab);color:var(--text);font:inherit;font-weight:600;padding:10px 18px;border-radius:8px;cursor:pointer}
+nav button.active{background:#1e3558;color:#fff}
+.hero{background:linear-gradient(110deg,var(--navy2),var(--navy));color:#fff;border-radius:16px;padding:32px}
+.badge{display:inline-block;background:var(--gold-soft);color:#6b5520;font-size:13px;padding:3px 12px;border-radius:999px}
+.hero h2{font-size:30px;margin:14px 0 8px}
+.hero p{margin:0 0 18px;opacity:.95}
+.btn{border:0;font:inherit;font-weight:600;padding:10px 20px;border-radius:8px;cursor:pointer}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-navy{background:#1e3558;color:#fff}
+.btn-light{background:var(--tab);color:var(--text)}
+.grid{display:grid;gap:18px;margin-top:28px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.stat .lbl{font-size:15px}
+.stat .val{font-size:24px;font-weight:800;margin:4px 0}
+.small{font-size:13px;color:var(--muted)}
+.card h3{margin:0 0 16px;font-size:20px}
+.item{padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item b{display:block}
+.note{background:#fdf8ee;border-right:4px solid var(--gold);border-radius:8px;padding:12px 14px;margin-top:12px}
+footer{margin:36px 0 40px;font-size:13px;color:var(--muted)}
+.hidden{display:none!important}
+label{display:block;font-weight:600;margin:12px 0 4px;font-size:14px}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.login{max-width:440px;margin:28px auto 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.progress{height:10px;background:var(--tab);border-radius:99px;overflow:hidden;margin:8px 0}
+.progress span{display:block;height:100%;background:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:right;padding:9px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.pill{font-size:12px;padding:2px 10px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:#e3f3e9;color:var(--ok)}
+.pill.wait{background:#fbf0dc;color:var(--warn)}
+.steps{list-style:none;padding:0;margin:0}
+.steps li{padding:8px 28px 8px 0;position:relative}
+.steps li:before{content:"";position:absolute;right:4px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--tab);border:2px solid #c9cedb}
+.steps li.done:before{background:var(--ok);border-color:var(--ok)}
+.steps li.now:before{background:var(--gold);border-color:var(--gold)}
+.modal{position:fixed;inset:0;background:rgba(10,20,40,.5);display:grid;place-items:center;padding:16px;z-index:5}
+.modal .card{max-width:440px;width:100%}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;z-index:9}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:#fff;font:inherit;font-size:14px;padding:6px 14px;border-radius:99px;cursor:pointer}
+.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.post{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff}
+.post .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
+.post h4{margin:0 0 4px;font-size:17px}
+.reply{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f1f4fa;border-right:3px solid var(--navy2)}
+.reply.private{background:#fdf8ee;border-color:var(--gold)}
+.pill.cat{background:#e8edf6;color:var(--navy2)}
+.pill.lock{background:#fbf0dc;color:var(--warn)}
+.role{display:flex;gap:6px;align-items:center;font-size:14px}
+.inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.inline input,.inline select{width:auto;flex:1;min-width:140px}
+@media (max-width:800px){
+  .g3,.g2{grid-template-columns:1fr}
+  .hero{padding:22px}.hero h2{font-size:24px}
+  header h1{font-size:16px}.logo{width:70px;height:44px}
+  .tbl{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <h1>פורטל הדיירים | מתחם יצחק רבין–אפק</h1>
+      <p>מידע, מסמכים ועדכונים במקום אחד</p>
+    </div>
+    <div class="logo" aria-label="לוגו">
+      <svg width="34" height="40" viewBox="0 0 34 40" fill="none" stroke="#c4a466" stroke-width="2" stroke-linecap="round"><circle cx="17" cy="5" r="3"/><path d="M17 8v28M10 14h14M4 26c2 7 7 10 13 10s11-3 13-10M4 26l3 2M30 26l-3 2"/></svg>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav>
+    <button data-tab="home" class="active">דף הבית</button>
+    <button data-tab="personal">האזור האישי</button>
+    <button data-tab="board">לוח הודעות ושאלות</button>
+    <button data-tab="admin">ניהול נציגות (הדגמה)</button>
+  </nav>
+
+  <!-- דף הבית -->
+  <section id="home">
+    <div class="hero">
+      <span class="badge">אבטיפוס להמחשה</span>
+      <h2>הבית שלכם. הפרויקט שלכם.</h2>
+      <p>כל המידע על פרויקט ההתחדשות העירונית במתחם יצחק רבין–אפק, במקום אחד, באופן ברור ונגיש.</p>
+      <button class="btn btn-gold" onclick="openRegister()">הרשמה לפורטל הדיירים</button>
+    </div>
+
+    <div class="grid g3">
+      <div class="card stat"><div class="lbl">מצב הפרויקט</div><div class="val" id="s-status">היערכות לקידום ההסכם</div><div class="small">תיאור כללי, לא סטטוס רשמי מאומת</div></div>
+      <div class="card stat"><div class="lbl">המסמך המרכזי</div><div class="val">אוגדן ההסכם</div><div class="small">גישה לדיירים מאומתים בלבד במערכת האמיתית</div></div>
+      <div class="card stat"><div class="lbl">עדכון אחרון</div><div class="val" id="s-updated">הדגמה</div><div class="small">עדכוני הדגמה בלבד</div></div>
+    </div>
+
+    <div class="grid g3">
+      <div class="card"><h3>חדשות ועדכונים</h3><div id="news-list"></div></div>
+      <div class="card"><h3>מפגשים וכנסים</h3><div id="meet-list"></div></div>
+      <div class="card"><h3>הדמיות ומסמכים</h3>
+        <p>הדמיות, מצגות וסיכומי מפגשים יפורסמו כאן לאחר אישור הנציגות.</p>
+        <div class="note">מסמכי ההסכם המלאים יופיעו באזור המוגן בלבד.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- האזור האישי -->
+  <section id="personal" class="hidden">
+    <div id="login-box" class="card login">
+      <h3>כניסה לאזור האישי</h3>
+      <p class="small">הכניסה מתבצעת עם מספר הטלפון שרשום אצל הנציגות. בהדגמה כל מספר וכל קוד יעבדו.</p>
+      <div id="step-phone">
+        <label for="phone">מספר טלפון נייד</label>
+        <input id="phone" type="tel" inputmode="tel" placeholder="050-0000000" dir="ltr">
+        <div class="row"><button class="btn btn-navy" onclick="sendCode()">שליחת קוד אימות</button></div>
+      </div>
+      <div id="step-code" class="hidden">
+        <label for="code">קוד אימות שנשלח ב-SMS</label>
+        <input id="code" inputmode="numeric" maxlength="6" placeholder="123456" dir="ltr">
+        <div class="row"><button class="btn btn-navy" onclick="verify()">כניסה</button><button class="btn btn-light" onclick="backPhone()">חזרה</button></div>
+      </div>
+    </div>
+
+    <div id="dash" class="hidden">
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div><div class="small">שלום,</div><div style="font-size:22px;font-weight:800">דייר/ת לדוגמה</div><div class="small">בניין רבין 12, דירה 7 · <span dir="ltr" id="dash-phone"></span></div></div>
+        <button class="btn btn-light" onclick="logout()">יציאה</button>
+      </div>
+      <div class="grid g2">
+        <div class="card"><h3>הסטטוס שלי</h3>
+          <div class="row" style="margin:0 0 10px"><span class="pill wait">טרם נחתם</span></div>
+          <ul class="steps">
+            <li class="done">פרטי הדירה אומתו מול הנציגות</li>
+            <li class="now">עיון באוגדן ההסכם</li>
+            <li>פגישה עם עורך הדין של הדיירים</li>
+            <li>חתימה על ההסכם</li>
+          </ul>
+        </div>
+        <div class="card"><h3>המסמכים שלי</h3>
+          <div class="item"><b>אוגדן ההסכם (טיוטה)</b><span class="small">PDF · יפורסם לאחר אישור הנציגות</span></div>
+          <div class="item"><b>נספח תמורות – הדירה שלי</b><span class="small">PDF · אישי</span></div>
+          <div class="item"><b>מצגת כנס דיירים</b><span class="small">PDF · כללי</span></div>
+        </div>
+        <div class="card"><h3>הפרטים שלי</h3>
+          <label for="t-name">שם מלא</label><input id="t-name" value="דייר/ת לדוגמה">
+          <label for="t-email">דוא"ל</label><input id="t-email" type="email" dir="ltr">
+          <label for="t-occ">מי גר בדירה?</label>
+          <select id="t-occ" onchange="$('renter').classList.toggle('hidden',this.value!=='rent')">
+            <option value="own">אני גר/ה בדירה</option><option value="rent">הדירה מושכרת</option><option value="empty">הדירה ריקה</option>
+          </select>
+          <div id="renter" class="hidden">
+            <label for="t-rname">שם השוכר</label><input id="t-rname">
+            <label for="t-rphone">טלפון השוכר</label><input id="t-rphone" type="tel" dir="ltr">
+            <label for="t-rend">סיום חוזה השכירות</label><input id="t-rend" type="date">
+          </div>
+          <div class="row"><button class="btn btn-navy" onclick="saveMe()">שמירת פרטים</button></div>
+        </div>
+        <div class="card"><h3>הדירה שלי</h3>
+          <div class="item"><b>גוש / חלקה / תת־חלקה</b><span>6159 / 412 / 7</span></div>
+          <div class="item"><b>שטח רשום בנסח</b><span>78.4 מ"ר</span></div>
+          <div class="item"><b>שטח לפי מדידת השמאי</b><span>81.2 מ"ר</span> <span class="small">· מדידה מ-03.2026</span></div>
+          <div class="item"><b>תמורה מוצעת</b><span>דירה של 93 מ"ר + מרפסת 12 מ"ר + חניה</span></div>
+          <div class="item"><b>נסח טאבו</b><span class="small">PDF · הופק 10.2026</span></div>
+          <div class="note">הנתונים כאן להמחשה בלבד ואינם מחייבים.</div>
+        </div>
+        <div class="card"><h3>פנייה לנציגות</h3>
+          <label for="msg">במה נוכל לעזור?</label>
+          <textarea id="msg" rows="4" placeholder="כתבו כאן את שאלתכם"></textarea>
+          <div class="row"><button class="btn btn-navy" onclick="sendMsg()">שליחה</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- לוח הודעות -->
+  <section id="board" class="hidden">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div><h3 style="margin:0">לוח הודעות ושאלות</h3><div class="small">כנסים, חוזי מכר, התקדמות ההסכם ושאלות לעורכי הדין של הפרויקט</div></div>
+      <div class="role">צפייה בהדגמה כ:
+        <button class="chip active" data-role="tenant">דייר (רבין 12 / 7)</button>
+        <button class="chip" data-role="lawyer">עורך דין</button>
+      </div>
+    </div>
+    <div class="grid g2" style="grid-template-columns:2fr 1fr">
+      <div>
+        <div class="chips" id="cats"></div>
+        <div id="posts"></div>
+      </div>
+      <div>
+        <div class="card"><h3>התקדמות ההסכם</h3>
+          <ul class="steps">
+            <li class="done">בחירת נציגות ועורך דין לדיירים</li>
+            <li class="done">בחירת יזם</li>
+            <li class="now">משא ומתן על ההסכם</li>
+            <li>איסוף חתימות (יעד 66%)</li>
+            <li>הגשת תוכנית לוועדה</li>
+          </ul>
+          <div class="progress" style="margin-top:12px"><span style="width:43%"></span></div><div class="small">41 מתוך 96 חתמו</div>
+        </div>
+        <div class="card" style="margin-top:18px"><h3 id="form-title">שאלה או הודעה חדשה</h3>
+          <label for="b-cat">נושא</label>
+          <select id="b-cat"></select>
+          <label for="b-title">כותרת</label><input id="b-title">
+          <label for="b-body">תוכן</label><textarea id="b-body" rows="3"></textarea>
+          <label for="b-vis">מי יראה?</label>
+          <select id="b-vis"><option value="public">כל הדיירים (פומבי)</option><option value="private">רק אני, הנציגות ועורכי הדין (פרטי)</option></select>
+          <label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="b-law" checked style="width:auto"> לשלוח גם לעורכי הדין של הפרויקט</label>
+          <div class="row"><button class="btn btn-navy" onclick="addPost()">פרסום</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ניהול נציגות -->
+  <section id="admin" class="hidden">
+    <div class="note" style="margin-top:0">מסך הדגמה. במערכת האמיתית הגישה תהיה לחברי הנציגות בלבד, עם הרשאות מנהל.</div>
+    <div class="grid g3">
+      <div class="card stat"><div class="lbl">דיירים רשומים בפורטל</div><div class="val" id="a-reg">0 / 96</div><div class="progress"><span id="a-reg-bar" style="width:0"></span></div></div>
+      <div class="card stat"><div class="lbl">חתימות על ההסכם</div><div class="val">41 / 96</div><div class="progress"><span style="width:43%"></span></div><div class="small">43% · יעד: 66%</div></div>
+      <div class="card stat"><div class="lbl">פניות פתוחות</div><div class="val" id="a-open">2</div><div class="small">פניות מהאזור האישי</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>פרסום עדכון חדש</h3>
+        <label for="n-title">כותרת</label><input id="n-title" placeholder="למשל: סיכום כנס הדיירים">
+        <label for="n-body">תוכן</label><textarea id="n-body" rows="3"></textarea>
+        <div class="row"><button class="btn btn-navy" onclick="addNews()">פרסום בדף הבית</button></div>
+      </div>
+      <div class="card"><h3>קביעת מפגש</h3>
+        <label for="m-title">שם המפגש</label><input id="m-title" placeholder="כנס דיירים">
+        <div class="grid g2" style="margin-top:0;gap:10px">
+          <div><label for="m-date">תאריך</label><input id="m-date" type="date"></div>
+          <div><label for="m-time">שעה</label><input id="m-time" type="time"></div>
+        </div>
+        <label for="m-place">מקום</label><input id="m-place" placeholder="תיאטרון גבעתיים">
+        <div class="row"><button class="btn btn-navy" onclick="addMeet()">פרסום מפגש</button></div>
+      </div>
+      <div class="card"><h3>עדכון מצב הפרויקט</h3>
+        <label for="p-status">שלב נוכחי</label>
+        <select id="p-status">
+          <option>היערכות לקידום ההסכם</option><option>משא ומתן עם היזם</option><option>איסוף חתימות</option>
+          <option>הגשת תוכנית לוועדה</option><option>היתר בנייה</option><option>פינוי ובנייה</option>
+        </select>
+        <div class="row"><button class="btn btn-navy" onclick="setStatus()">שמירה</button></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;order:-1"><h3>רשימת דיירים</h3><div class="tbl"><table>
+        <thead><tr><th>כתובת / דירה</th><th>בעלים</th><th>מגורים</th><th>שטח בנסח</th><th>שטח מדוד</th><th>נסח</th><th>הסכם</th></tr></thead>
+        <tbody>
+          <tr><td>רבין 12 / 7</td><td>דייר/ת לדוגמה</td><td id="occ-cell">גר בדירה</td><td>78.4</td><td>81.2</td><td><span class="pill ok">קיים</span></td><td><span class="pill wait">טרם נחתם</span></td></tr>
+          <tr><td>רבין 8 / 3</td><td>משפחת כהן</td><td>מושכרת</td><td>65.0</td><td>66.1</td><td><span class="pill ok">קיים</span></td><td><span class="pill ok">נחתם</span></td></tr>
+          <tr><td>אפק 4 / 11</td><td>לוי</td><td>גר בדירה</td><td>92.3</td><td>—</td><td><span class="pill wait">חסר</span></td><td><span class="pill wait">טרם נחתם</span></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card" style="grid-column:1/-1"><h3>מעקב פעילות משתמשים</h3>
+        <div class="chips" id="act-filter"></div>
+        <div class="tbl"><table>
+        <thead><tr><th>זמן</th><th>משתמש</th><th>תפקיד</th><th>פעולה</th></tr></thead>
+        <tbody id="activity"></tbody></table></div>
+      </div>
+      <div class="card"><h3>פניות דיירים</h3><div class="tbl"><table>
+        <thead><tr><th>דייר</th><th>נושא</th><th>סטטוס</th></tr></thead>
+        <tbody id="inbox">
+          <tr><td>רבין 8 / 3</td><td>מועד פגישה עם עו"ד</td><td><span class="pill wait">פתוחה</span></td></tr>
+          <tr><td>אפק 4 / 11</td><td>שאלה על חניה</td><td><span class="pill wait">פתוחה</span></td></tr>
+          <tr><td>רבין 12 / 2</td><td>קבלת מצגת</td><td><span class="pill ok">טופלה</span></td></tr>
+        </tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>אבטיפוס לאישור עיצוב וחוויית משתמש. אינו אתר פעיל, אינו כולל מערכת הרשאות, אימות SMS או שליחת התראות. אין להזין מידע רגיש.</footer>
+</main>
+
+<div id="reg-modal" class="modal hidden" onclick="if(event.target===this)closeRegister()">
+  <div class="card">
+    <h3>הרשמה לפורטל הדיירים</h3>
+    <label for="r-name">שם מלא</label><input id="r-name">
+    <label for="r-phone">טלפון נייד</label><input id="r-phone" type="tel" dir="ltr">
+    <label for="r-addr">כתובת ומספר דירה</label><input id="r-addr" placeholder="רבין 12, דירה 7">
+    <div class="row"><button class="btn btn-gold" onclick="register()">שליחת בקשה</button><button class="btn btn-light" onclick="closeRegister()">ביטול</button></div>
+    <p class="small">הבקשה תאושר על ידי הנציגות לאחר אימות מול רשימת הדיירים.</p>
+  </div>
+</div>
+
+<script>
+const data = {
+  news:[{t:"ברוכים הבאים לפורטל הדיירים",b:"כאן יפורסמו הודעות רשמיות של נציגות המתחם.",d:"הדגמה"}],
+  meets:[{t:"כנס דיירים",d:"29.11.2026",h:"19:00",p:"תיאטרון גבעתיים"}],
+  reg:0
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function render(){
+  $("news-list").innerHTML = data.news.map(n=>`<div class="item"><b>${esc(n.t)}</b><div>${esc(n.b)}</div><span class="small">${esc(n.d)}</span></div>`).join("");
+  $("meet-list").innerHTML = data.meets.map(m=>`<div class="item"><b>${esc(m.t)}</b><div>${esc(m.h)} | ${esc(m.d)}</div><div>${esc(m.p)}</div><span class="small">פרטי הכנס כפי שנמסרו לתכנון הפורטל</span></div>`).join("");
+  $("a-reg").textContent = data.reg+" / 96";
+  $("a-reg-bar").style.width = (data.reg/96*100)+"%";
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));
+  ["home","personal","board","admin"].forEach(s=>$(s).classList.toggle("hidden",s!==b.dataset.tab));
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+function openRegister(){$("reg-modal").classList.remove("hidden")}
+function closeRegister(){$("reg-modal").classList.add("hidden")}
+function register(){
+  if(!$("r-name").value.trim()||!$("r-phone").value.trim()){toast("נא למלא שם וטלפון");return}
+  data.reg++;render();closeRegister();["r-name","r-phone","r-addr"].forEach(i=>$(i).value="");
+  toast("הבקשה נשלחה. הנציגות תאשר בקרוב.");
+}
+function sendCode(){
+  if($("phone").value.replace(/\D/g,"").length<9){toast("נא להזין מספר טלפון תקין");return}
+  $("step-phone").classList.add("hidden");$("step-code").classList.remove("hidden");toast("בהדגמה לא נשלח SMS. הזינו כל קוד.");
+}
+function backPhone(){$("step-code").classList.add("hidden");$("step-phone").classList.remove("hidden")}
+function verify(){
+  if(!$("code").value.trim()){toast("נא להזין קוד");return}
+  $("dash-phone").textContent=$("phone").value;$("login-box").classList.add("hidden");$("dash").classList.remove("hidden");log(ME,"דייר","התחבר לפורטל");
+}
+function logout(){$("dash").classList.add("hidden");$("login-box").classList.remove("hidden");backPhone();$("code").value=""}
+function sendMsg(){
+  const v=$("msg").value.trim(); if(!v){toast("נא לכתוב הודעה");return}
+  $("inbox").insertAdjacentHTML("afterbegin",`<tr><td>רבין 12 / 7</td><td>${esc(v.slice(0,40))}</td><td><span class="pill wait">פתוחה</span></td></tr>`);
+  $("a-open").textContent=+$("a-open").textContent+1;log(ME,"דייר","שלח פנייה לנציגות");$("msg").value="";toast("הפנייה נשלחה לנציגות");
+}
+function saveMe(){
+  const o=$("t-occ"); $("occ-cell").textContent=o.options[o.selectedIndex].text.replace("אני גר/ה בדירה","גר בדירה").replace("הדירה ","");
+  log(ME,"דייר","עדכן פרטים אישיים ומצב מגורים");toast("הפרטים נשמרו ועודכנו גם בפאנל הניהול");
+}
+function today(){return new Date().toLocaleDateString("he-IL")}
+function addNews(){
+  const t=$("n-title").value.trim(); if(!t){toast("נא להזין כותרת");return}
+  data.news.unshift({t,b:$("n-body").value.trim(),d:today()});$("s-updated").textContent=today();
+  render();$("n-title").value=$("n-body").value="";log("הנציגות","נציגות","פרסמה עדכון: "+t);toast("העדכון פורסם בדף הבית");
+}
+function addMeet(){
+  const t=$("m-title").value.trim(),d=$("m-date").value; if(!t||!d){toast("נא להזין שם ותאריך");return}
+  const [y,m,dd]=d.split("-");
+  data.meets.unshift({t,d:`${dd}.${m}.${y}`,h:$("m-time").value||"—",p:$("m-place").value.trim()||"יעודכן"});
+  render();["m-title","m-date","m-time","m-place"].forEach(i=>$(i).value="");toast("המפגש פורסם");
+}
+function setStatus(){$("s-status").textContent=$("p-status").value;$("s-updated").textContent=today();toast("מצב הפרויקט עודכן")}
+render();
+
+const CATS=["כנסים","חוזי מכר","התקדמות ההסכם","שאלה לעורכי הדין"];
+const ME="רבין 12 / 7";
+let role="tenant", cat="הכול", actFilter="הכול";
+const posts=[
+ {id:1,cat:"כנסים",title:"כנס דיירים ב-29.11 בשעה 19:00",body:"הכנס יתקיים בתיאטרון גבעתיים. יוצגו טיוטת ההסכם והדמיות.",by:"הנציגות",role:"admin",vis:"public",law:false,time:"20.11.2026",replies:[]},
+ {id:2,cat:"חוזי מכר",title:"פורסמה טיוטת חוזה המכר לעיון",body:"הטיוטה זמינה באזור האישי של כל בעל דירה. אפשר לשאול כאן שאלות.",by:"עו\"ד הדיירים",role:"lawyer",vis:"public",law:false,time:"18.11.2026",replies:[]},
+ {id:3,cat:"שאלה לעורכי הדין",title:"מה קורה עם המשכנתא על הדירה?",body:"יש לי משכנתא פעילה. איך זה מטופל בהסכם?",by:"אפק 4 / 11",role:"tenant",vis:"public",law:true,time:"21.11.2026",
+  replies:[{by:"עו\"ד הדיירים",vis:"public",text:"היזם נותן ערבות ומסדיר את המשכנתא מול הבנק. נרחיב בכנס."}]},
+ {id:4,cat:"שאלה לעורכי הדין",title:"הדירה רשומה על שם אבי שנפטר",body:"מה צריך כדי לחתום?",by:ME,role:"tenant",vis:"private",law:true,time:"22.11.2026",
+  replies:[{by:"עו\"ד הדיירים",vis:"private",text:"צריך צו ירושה או צו קיום צוואה. אשמח לקבוע שיחה."}]},
+ {id:5,cat:"שאלה לעורכי הדין",title:"שאלה אישית על הערת אזהרה",body:"(פרטי)",by:"רבין 8 / 3",role:"tenant",vis:"private",law:true,time:"23.11.2026",replies:[]},
+];
+const acts=[
+ {t:"24.11.2026 08:43",u:"אפק 4 / 11",r:"דייר",a:"צפה בטיוטת חוזה המכר"},
+ {t:"24.11.2026 08:41",u:"אפק 4 / 11",r:"דייר",a:"התחבר לפורטל"},
+ {t:"23.11.2026 21:10",u:"רבין 8 / 3",r:"דייר",a:"שלח שאלה פרטית לעורכי הדין"},
+ {t:"23.11.2026 17:02",u:"עו\"ד הדיירים",r:"עורך דין",a:"ענה פומבית: מה קורה עם המשכנתא על הדירה?"},
+];
+const roleName=r=>({tenant:"דייר",lawyer:"עורך דין",admin:"נציגות"}[r]);
+function log(u,r,a){const d=new Date();acts.unshift({t:d.toLocaleDateString("he-IL")+" "+d.toTimeString().slice(0,5),u,r,a});renderActs()}
+function renderActs(){
+  const roles=["הכול","דייר","עורך דין","נציגות"];
+  $("act-filter").innerHTML=roles.map(r=>`<button class="chip${r===actFilter?" active":""}" onclick="actFilter='${r}';renderActs()">${r}</button>`).join("");
+  $("activity").innerHTML=acts.filter(a=>actFilter==="הכול"||a.r===actFilter).map(a=>`<tr><td dir="ltr" style="text-align:right">${esc(a.t)}</td><td>${esc(a.u)}</td><td>${esc(a.r)}</td><td>${esc(a.a)}</td></tr>`).join("");
+}
+function canSee(p){return role!=="tenant"||p.vis==="public"||p.by===ME}
+function renderBoard(){
+  $("cats").innerHTML=["הכול",...CATS].map(c=>`<button class="chip${c===cat?" active":""}" onclick="cat='${c}';renderBoard()">${c}</button>`).join("");
+  const list=posts.filter(p=>(cat==="הכול"||p.cat===cat)&&canSee(p));
+  $("posts").innerHTML=list.length?list.map(p=>{
+    const reps=p.replies.filter(r=>role!=="tenant"||r.vis==="public"||p.by===ME).map(r=>`<div class="reply${r.vis==="private"?" private":""}"><b>${esc(r.by)}</b> ${r.vis==="private"?'<span class="pill lock">תשובה פרטית</span>':'<span class="pill ok">תשובה פומבית</span>'}<div>${esc(r.text)}</div></div>`).join("");
+    const box=role==="lawyer"&&p.law?`<div class="inline"><input id="r-${p.id}" placeholder="תשובה של עורך הדין"><select id="rv-${p.id}"><option value="public">פומבי לכל הדיירים</option><option value="private">פרטי לשואל בלבד</option></select><button class="btn btn-navy" onclick="reply(${p.id})">מענה</button></div>`:"";
+    return `<div class="post"><div class="meta"><span class="pill cat">${esc(p.cat)}</span>${p.vis==="private"?'<span class="pill lock">פרטי</span>':""}${p.law?'<span class="pill ok">נשלח לעורכי הדין</span>':""}<span>${esc(p.by)} · ${esc(p.time)}</span></div><h4>${esc(p.title)}</h4><div>${esc(p.body)}</div>${reps}${box}</div>`;
+  }).join(""):'<p class="small">אין הודעות בנושא הזה.</p>';
+  $("b-cat").innerHTML=(role==="tenant"?["שאלה לעורכי הדין","כנסים","חוזי מכר","התקדמות ההסכם"]:CATS).map(c=>`<option>${c}</option>`).join("");
+  $("form-title").textContent=role==="tenant"?"שאלה או הודעה חדשה":"פרסום הודעה לדיירים";
+}
+document.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>{role=b.dataset.role;document.querySelectorAll("[data-role]").forEach(x=>x.classList.toggle("active",x===b));renderBoard()});
+function addPost(){
+  const t=$("b-title").value.trim(); if(!t){toast("נא להזין כותרת");return}
+  const by=role==="tenant"?ME:"עו\"ד הדיירים", vis=$("b-vis").value, law=$("b-law").checked;
+  posts.unshift({id:Date.now(),cat:$("b-cat").value,title:t,body:$("b-body").value.trim(),by,role,vis,law,time:today(),replies:[]});
+  log(by,roleName(role),`פרסם ${vis==="private"?"הודעה פרטית":"הודעה"}: ${t}`);
+  $("b-title").value=$("b-body").value="";cat="הכול";renderBoard();
+  toast(law&&role==="tenant"?"נשלח. עורכי הדין קיבלו התראה במייל.":"פורסם בלוח");
+}
+function reply(id){
+  const v=$("r-"+id).value.trim(); if(!v){toast("נא לכתוב תשובה");return}
+  const p=posts.find(x=>x.id===id), vis=$("rv-"+id).value;
+  p.replies.push({by:"עו\"ד הדיירים",vis,text:v});
+  log("עו\"ד הדיירים","עורך דין",`ענה ${vis==="private"?"באופן פרטי":"פומבית"}: ${p.title}`);
+  renderBoard();toast("התשובה נשלחה, והשואל קיבל התראה");
+}
+renderBoard();renderActs();
+</script>
+</body>
+</html>
