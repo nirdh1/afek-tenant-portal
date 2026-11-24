@@ -30,7 +30,14 @@ export async function createPost(_prev, f) {
     category: val(f, 'category'), title, body: val(f, 'body'),
     visibility: val(f, 'visibility') || 'public',
     to_lawyers: f.get('to_lawyers') === 'on' || val(f, 'category') === 'lawyers',
-    is_announcement: f.get('is_announcement') === 'on',
+    is_announcement: f.get('is_announcement') === 'on' || f.get('featured') === 'on',
+    featured: f.get('featured') === 'on',
+    attachment_path: val(f, 'attachment_path'),
+    attachment_name: val(f, 'attachment_name'),
+  }
+  if (row.attachment_path) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !row.attachment_path.startsWith(`posts/${user.id}/`)) { row.attachment_path = null; row.attachment_name = null }
   }
   const { error } = await supabase.from('posts').insert(row)
   if (error) return { error: 'הפרסום נכשל' }
@@ -68,6 +75,16 @@ export async function approveReply(f) {
   await supabase.from('replies').update({ approved: true, visibility: 'public' }).eq('id', num(f, 'id'))
   await log(supabase, 'אישר פרסום תגובה', val(f, 'title'))
   revalidatePath('/board'); revalidatePath('/admin')
+}
+
+// הצגת הודעה בגדול בראש דף הבית (מנהל בלבד)
+export async function toggleFeatured(f) {
+  const supabase = await createClient()
+  const on = val(f, 'on') === '1'
+  const patch = on ? { featured: true, is_announcement: true, visibility: 'public', approved: true } : { featured: false }
+  await supabase.from('posts').update(patch).eq('id', num(f, 'id'))
+  await log(supabase, on ? 'הציג הודעה בגדול בדף הבית' : 'הסיר הודעה מראש דף הבית', val(f, 'title'))
+  revalidatePath('/'); revalidatePath('/board')
 }
 
 export async function deletePost(f) {

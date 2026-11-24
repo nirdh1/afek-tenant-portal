@@ -14,9 +14,28 @@ export default async function Home() {
       .order('starts_at').limit(5),
     supabase.rpc('public_stats'),
   ])
+  const { data: featured } = await supabase.from('posts').select('id,title,body,created_at,attachment_path,attachment_name')
+    .eq('featured', true).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const next = meetings?.[0]
 
   return (
     <section>
+      {featured ? (
+        <div className="featured">
+          <span className="badge">הודעה חשובה</span>
+          <h2>{featured.title}</h2>
+          {featured.body && <p style={{ whiteSpace: 'pre-wrap' }}>{featured.body}</p>}
+          {featured.attachment_path && <a className="btn btn-gold" href={`/attachment/${featured.id}`} target="_blank">📎 {featured.attachment_name || 'לצפייה בקובץ'}</a>}
+        </div>
+      ) : next && (
+        <div className="featured">
+          <span className="badge">האירוע הקרוב</span>
+          <h2>{next.title}</h2>
+          <p className="when">{fmtDateTime(next.starts_at)}{next.location && <> · {next.location}</>}</p>
+          {next.notes && <p style={{ whiteSpace: 'pre-wrap' }}>{next.notes}</p>}
+        </div>
+      )}
+
       <div className="hero">
         <span className="badge">פורטל רשמי של נציגות הדיירים</span>
         <h2>הבית שלכם. הפרויקט שלכם.</h2>

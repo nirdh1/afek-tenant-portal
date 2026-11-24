@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMe } from '@/lib/supabase/server'
 import { CATEGORIES, fmtDateTime } from '@/lib/labels'
-import { createReply, deletePost, approvePost, approveReply } from '@/app/actions'
+import { createReply, deletePost, approvePost, approveReply, toggleFeatured } from '@/app/actions'
 import PostForm from '@/components/PostForm'
 
 export const dynamic = 'force-dynamic'
@@ -45,11 +45,12 @@ export default async function BoardPage({ searchParams }) {
                   {p.visibility === 'private' && <span className="pill lock">פרטי</span>}
                   {!p.approved && p.visibility === 'public' && <span className="pill wait">ממתין לאישור פרסום</span>}
                   {p.to_lawyers && <span className="pill ok">נשלח לעורכי הדין</span>}
-                  {p.is_announcement && <span className="pill ok">בדף הבית</span>}
+                  {p.featured ? <span className="pill ok">בגדול בדף הבית</span> : p.is_announcement && <span className="pill ok">בדף הבית</span>}
                   <span>{p.author_label} · {fmtDateTime(p.created_at)}</span>
                 </div>
                 <h4>{p.title}</h4>
                 {p.body && <div style={{ whiteSpace: 'pre-wrap' }}>{p.body}</div>}
+                {p.attachment_path && <div style={{ marginTop: 6 }}>📎 <a href={`/attachment/${p.id}`} target="_blank">{p.attachment_name || 'קובץ מצורף'}</a></div>}
                 {replies.map((r) => (
                   <div key={r.id} className={`reply${r.visibility === 'private' ? ' private' : ''}`}>
                     <b>{r.author_label}</b>{' '}
@@ -83,6 +84,11 @@ export default async function BoardPage({ searchParams }) {
                         <button className="btn btn-gold" style={{ padding: '4px 12px', fontSize: 13 }}>אישור ופרסום לכל הדיירים</button>
                       </form>
                     )}
+                    <form action={toggleFeatured}>
+                      <input type="hidden" name="id" value={p.id} /><input type="hidden" name="title" value={p.title} />
+                      <input type="hidden" name="on" value={p.featured ? '0' : '1'} />
+                      <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>{p.featured ? 'הסרה מראש דף הבית' : 'הצגה בגדול בדף הבית'}</button>
+                    </form>
                     <form action={deletePost}>
                       <input type="hidden" name="id" value={p.id} />
                       <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>מחיקה</button>

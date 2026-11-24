@@ -74,6 +74,9 @@ create table posts (
   to_lawyers      boolean not null default false,
   is_announcement boolean not null default false,  -- מוצג גם בדף הבית הציבורי
   approved        boolean not null default false,  -- הודעת דייר גלויה לאחרים רק אחרי אישור המנהל
+  featured        boolean not null default false,  -- מוצג בגדול בראש דף הבית
+  attachment_path text,                             -- קובץ מצורף באחסון
+  attachment_name text,
   created_at      timestamptz not null default now()
 );
 
@@ -374,8 +377,17 @@ create policy docs_read on storage.objects for select to authenticated using (
   bucket_id = 'documents'
   and exists (select 1 from public.documents d where d.storage_path = storage.objects.name)
 );
+-- קבצים מצורפים להודעות: גלויים למי שרואה את ההודעה (כולל אורחים בהודעות שבדף הבית)
+create policy post_files_read on storage.objects for select to anon, authenticated using (
+  bucket_id = 'documents'
+  and name like 'posts/%'
+  and exists (select 1 from public.posts p where p.attachment_path = storage.objects.name)
+);
 create policy docs_write on storage.objects for insert to authenticated with check (
-  bucket_id = 'documents' and public.is_admin()
+  bucket_id = 'documents' and (
+    public.is_admin()
+    or (name like 'posts/' || auth.uid()::text || '/%' and public.my_role() in ('tenant','lawyer'))
+  )
 );
 create policy docs_delete on storage.objects for delete to authenticated using (
   bucket_id = 'documents' and public.is_admin()

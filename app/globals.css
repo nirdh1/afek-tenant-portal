@@ -85,3 +85,9 @@ a{color:var(--navy2)}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0;font-weight:600}
 button[disabled]{opacity:.6;cursor:default}
+.featured{background:#fff;border:3px solid var(--gold);border-radius:16px;padding:28px 32px;margin-bottom:22px;box-shadow:0 6px 24px rgba(22,35,63,.08)}
+.featured h2{font-size:34px;margin:12px 0 8px;line-height:1.25}
+.featured p{font-size:19px;margin:0 0 14px}
+.featured .when{font-size:24px;font-weight:700;color:var(--navy2)}
+.featured .btn{display:inline-block;text-decoration:none}
+@media (max-width:800px){.featured{padding:20px}.featured h2{font-size:26px}.featured .when{font-size:19px}}
