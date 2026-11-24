@@ -17,7 +17,7 @@
 
 ### 1. Supabase (מסד נתונים, כניסה ואחסון קבצים)
 1. נרשמים ב-https://supabase.com ויוצרים פרויקט חדש. כדאי לבחור אזור קרוב, למשל Frankfurt.
-2. **SQL Editor > New query**: מדביקים את כל התוכן של `supabase/schema.sql` ולוחצים **Run**.
+2. **SQL Editor > New query**: מדביקים את כל התוכן של `supabase/schema.sql` ולוחצים **Run**. אם יש בפרויקט טבלאות ישנות, מריצים במקומו את `supabase/fresh_install.sql`, שמוחק אותן ומתקין מחדש.
 3. מוסיפים את עצמכם כמנהלים (מחליפים את המספר, בפורמט 972 בלי האפס):
    ```sql
    insert into invites (phone, full_name, role) values ('972501234567', 'השם שלי', 'admin');
