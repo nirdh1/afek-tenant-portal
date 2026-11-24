@@ -46,9 +46,7 @@ export async function createPost(_prev, f) {
   await log(supabase, staff ? 'פרסם הודעה' : 'שלח הודעה', title)
   revalidatePath('/board'); revalidatePath('/'); revalidatePath('/admin')
   if (staff) return { ok: 'פורסם' }
-  return { ok: row.visibility === 'public'
-    ? 'ההודעה נשלחה ותתפרסם לכל הדיירים אחרי אישור הנציגות.'
-    : 'ההודעה נשלחה. רק הנציגות' + (row.to_lawyers ? ' ועורכי הדין' : '') + ' יראו אותה.' }
+  return { ok: 'השאלה נשלחה. רק הנציגות' + (row.to_lawyers ? ' ועורכי הדין' : '') + ' יראו אותה.' }
 }
 
 export async function createReply(f) {

@@ -110,17 +110,19 @@ export default async function BoardPage({ searchParams }) {
           }) : <p className="small">אין הודעות בנושא הזה.</p>}
         </div>
         <div>
-          <div className="card"><h3>התקדמות ההסכם</h3>
+          {isAdmin && <div className="card"><h3>התקדמות ההסכם <span className="small">(רק אתה רואה)</span></h3>
             <div><b>{status?.stage}</b></div>
             <div className="progress" style={{ marginTop: 12 }}>
               <span style={{ width: `${stats?.apartments ? (stats.signed / stats.apartments) * 100 : 0}%` }} />
             </div>
             <div className="small">{stats?.signed ?? 0} מתוך {stats?.apartments ?? 0} חתמו · יעד {status?.signed_target}%</div>
-          </div>
-          <div className="card" style={{ marginTop: 18 }}>
-            <h3>{staff ? 'פרסום הודעה' : 'שאלה או הודעה חדשה'}</h3>
-            <PostForm role={profile.role} />
-          </div>
+          </div>}
+          {profile.role !== 'lawyer' && (
+            <div className="card" style={{ marginTop: isAdmin ? 18 : 0 }}>
+              <h3>{isAdmin ? 'פרסום הודעה' : 'שאלה לנציגות או לעורכי הדין'}</h3>
+              <PostForm role={profile.role} />
+            </div>
+          )}
         </div>
       </div>
     </section>

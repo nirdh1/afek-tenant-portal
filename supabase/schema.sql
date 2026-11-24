@@ -226,13 +226,14 @@ begin
 end $$;
 
 -- סטטיסטיקה ציבורית (מספרים בלבד)
+-- נתוני התקדמות: רק למנהל
 create or replace function public_stats() returns json
 language sql stable security definer set search_path = public as $$
-  select json_build_object(
+  select case when is_admin() then json_build_object(
     'apartments', (select count(*) from apartments),
     'signed',     (select count(*) from apartments where signed),
     'registered', (select count(*) from profiles where role = 'tenant')
-  )
+  ) end
 $$;
 
 -- ===== הרשאות (RLS) =====
@@ -275,9 +276,11 @@ $$;
 
 create policy post_public on posts for select to anon using (is_announcement and visibility = 'public' and approved);
 create policy post_read   on posts for select to authenticated using (can_see_post(posts));
+-- רק המנהל מפרסם הודעות. דייר יכול לשלוח שאלה פרטית לנציגות או לעורכי הדין.
 create policy post_insert on posts for insert to authenticated with check (
-  is_staff()
-  or (my_role() = 'tenant' and category in ('lawyers','general') and not is_announcement)
+  is_admin()
+  or (my_role() = 'tenant' and category in ('lawyers','general') and visibility = 'private'
+      and not is_announcement and not featured)
 );
 create policy post_admin on posts for update using (is_admin()) with check (is_admin());
 create policy post_del   on posts for delete using (is_admin());

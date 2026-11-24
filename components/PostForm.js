@@ -42,16 +42,16 @@ export default function PostForm({ role }) {
       <label htmlFor="body">תוכן</label><textarea id="body" name="body" rows={4} />
       <label htmlFor="file">צירוף קובץ (לא חובה)</label>
       <input id="file" name="file" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-      <label htmlFor="visibility">מי יראה?</label>
-      <select id="visibility" name="visibility" defaultValue={staff ? 'public' : 'private'}>
-        {staff ? <>
+      {staff ? <>
+        <label htmlFor="visibility">מי יראה?</label>
+        <select id="visibility" name="visibility" defaultValue="public">
           <option value="public">כל הדיירים</option>
           <option value="private">צוות בלבד</option>
-        </> : <>
-          <option value="private">רק לנציגות (ולעורכי הדין אם סימנתי)</option>
-          <option value="public">לפרסום לכל הדיירים, אחרי אישור הנציגות</option>
-        </>}
-      </select>
+        </select>
+      </> : <>
+        <input type="hidden" name="visibility" value="private" />
+        <p className="small">השאלה תגיע רק לנציגות (ולעורכי הדין אם סימנת). אם היא תתאים לכלל הדיירים, הנציגות תוכל לפרסם אותה.</p>
+      </>}
       {!staff && <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'center' }}>
         <input type="checkbox" name="to_lawyers" defaultChecked style={{ width: 'auto' }} /> לשלוח גם לעורכי הדין של הפרויקט</label>}
       {role === 'admin' && <>
