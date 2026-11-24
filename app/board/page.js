@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMe } from '@/lib/supabase/server'
-import { CATEGORIES, fmtDateTime } from '@/lib/labels'
+import { CATEGORIES, fmtDateTime, isImage } from '@/lib/labels'
 import { createReply, deletePost, approvePost, approveReply, toggleFeatured } from '@/app/actions'
 import PostForm from '@/components/PostForm'
 
@@ -21,6 +21,13 @@ export default async function BoardPage({ searchParams }) {
   const [{ data: posts }, { data: status }, { data: stats }] = await Promise.all([
     q, supabase.from('project_status').select('*').single(), supabase.rpc('public_stats'),
   ])
+
+  const imgPaths = (posts || []).map((p) => p.attachment_path).filter(isImage)
+  const imgUrl = {}
+  if (imgPaths.length) {
+    const { data } = await supabase.storage.from('documents').createSignedUrls(imgPaths, 60 * 60)
+    ;(data || []).forEach((d) => { if (d.signedUrl) imgUrl[d.path] = d.signedUrl })
+  }
 
   return (
     <section>
@@ -50,6 +57,9 @@ export default async function BoardPage({ searchParams }) {
                 </div>
                 <h4>{p.title}</h4>
                 {p.body && <div style={{ whiteSpace: 'pre-wrap' }}>{p.body}</div>}
+                {imgUrl[p.attachment_path] && (
+                  <a href={imgUrl[p.attachment_path]} target="_blank"><img src={imgUrl[p.attachment_path]} alt={p.title} className="post-img" /></a>
+                )}
                 {p.attachment_path && <div style={{ marginTop: 6 }}>📎 <a href={`/attachment/${p.id}`} target="_blank">{p.attachment_name || 'קובץ מצורף'}</a></div>}
                 {replies.map((r) => (
                   <div key={r.id} className={`reply${r.visibility === 'private' ? ' private' : ''}`}>

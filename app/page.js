@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { fmtDate, fmtDateTime } from '@/lib/labels'
+import { fmtDate, fmtDateTime, isImage, isPdf } from '@/lib/labels'
 import RegisterButton from '@/components/RegisterButton'
 
 export const dynamic = 'force-dynamic'
@@ -17,6 +17,11 @@ export default async function Home() {
   const { data: featured } = await supabase.from('posts').select('id,title,body,created_at,attachment_path,attachment_name')
     .eq('featured', true).order('created_at', { ascending: false }).limit(1).maybeSingle()
   const next = meetings?.[0]
+  let fileUrl = null
+  if (featured?.attachment_path && (isImage(featured.attachment_path) || isPdf(featured.attachment_path))) {
+    const { data } = await supabase.storage.from('documents').createSignedUrl(featured.attachment_path, 60 * 60)
+    fileUrl = data?.signedUrl
+  }
 
   return (
     <section>
@@ -25,7 +30,13 @@ export default async function Home() {
           <span className="badge">הודעה חשובה</span>
           <h2>{featured.title}</h2>
           {featured.body && <p style={{ whiteSpace: 'pre-wrap' }}>{featured.body}</p>}
-          {featured.attachment_path && <a className="btn btn-gold" href={`/attachment/${featured.id}`} target="_blank">📎 {featured.attachment_name || 'לצפייה בקובץ'}</a>}
+          {fileUrl && isImage(featured.attachment_path) && (
+            <a href={fileUrl} target="_blank"><img src={fileUrl} alt={featured.title} className="featured-img" /></a>
+          )}
+          {fileUrl && isPdf(featured.attachment_path) && (
+            <iframe src={`${fileUrl}#toolbar=0&view=FitH`} title={featured.title} className="featured-pdf" />
+          )}
+          {featured.attachment_path && <div><a className="btn btn-gold" href={`/attachment/${featured.id}`} target="_blank">📎 {isImage(featured.attachment_path) ? 'פתיחת התמונה בגודל מלא' : featured.attachment_name || 'לצפייה בקובץ'}</a></div>}
         </div>
       ) : next && (
         <div className="featured">
