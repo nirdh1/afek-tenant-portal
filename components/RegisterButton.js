@@ -12,7 +12,7 @@ export default function RegisterButton() {
     const f = new FormData(e.currentTarget)
     setBusy(true)
     const { error } = await createClient().from('registration_requests').insert({
-      full_name: f.get('full_name'), phone: f.get('phone'), address: f.get('address'),
+      full_name: f.get('full_name'), email: f.get('email'), phone: f.get('phone'), address: f.get('address'),
     })
     setBusy(false)
     setMsg(error ? 'השליחה נכשלה, נסו שוב.' : 'הבקשה נשלחה. הנציגות תאמת את הפרטים ותאשר בקרוב.')
@@ -27,7 +27,8 @@ export default function RegisterButton() {
             <h3>הרשמה לפורטל הדיירים</h3>
             {msg ? <p className="okmsg">{msg}</p> : <>
               <label htmlFor="full_name">שם מלא</label><input id="full_name" name="full_name" required />
-              <label htmlFor="phone">טלפון נייד</label><input id="phone" name="phone" type="tel" dir="ltr" required />
+              <label htmlFor="reg-email">כתובת מייל</label><input id="reg-email" name="email" type="email" dir="ltr" required />
+              <label htmlFor="phone">טלפון נייד</label><input id="phone" name="phone" type="tel" dir="ltr" />
               <label htmlFor="address">כתובת ומספר דירה</label><input id="address" name="address" placeholder="רבין 12, דירה 7" />
             </>}
             <div className="row">

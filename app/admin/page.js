@@ -52,8 +52,8 @@ export default async function AdminPage({ searchParams }) {
         <div className="card" style={{ marginTop: 18 }}><h3>ממתינים לאישור</h3>
           {pending.map((u) => (
             <form key={u.id} action={updateProfile} className="inline">
-              <input type="hidden" name="id" value={u.id} /><input type="hidden" name="label" value={u.phone} />
-              <span dir="ltr">+{u.phone}</span>
+              <input type="hidden" name="id" value={u.id} /><input type="hidden" name="label" value={u.email} />
+              <span dir="ltr">{u.email}</span>
               <select name="apartment_id" defaultValue=""><option value="">בחירת דירה</option>
                 {apartments.map((a) => <option key={a.id} value={a.id}>{a.building} / {a.unit}</option>)}</select>
               <select name="role" defaultValue="tenant">{['tenant', 'lawyer', 'admin'].map((r) => <option key={r} value={r}>{ROLES[r]}</option>)}</select>
@@ -63,7 +63,7 @@ export default async function AdminPage({ searchParams }) {
           {requests.data?.map((r) => (
             <form key={r.id} action={markRequestHandled} className="inline">
               <input type="hidden" name="id" value={r.id} />
-              <span>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.phone}</span> · {r.address} · {fmtDate(r.created_at)}</span>
+              <span>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email} {r.phone}</span> · {r.address} · {fmtDate(r.created_at)}</span>
               <button className="btn btn-light">טופל</button>
             </form>
           ))}
@@ -100,17 +100,17 @@ export default async function AdminPage({ searchParams }) {
 
       <div className="grid g2">
         <div className="card"><h3>הוספת משתמש מורשה</h3>
-          <p className="small">דייר, עורך דין או חבר נציגות. הוא ייכנס עם מספר הטלפון הזה.</p>
+          <p className="small">דייר, עורך דין או חבר נציגות. הוא ייכנס עם כתובת המייל הזו.</p>
           <InviteForm apartments={apartments} /></div>
         <div className="card"><h3>משתמשים</h3>
           <div className="tbl"><table><thead><tr><th>שם</th><th>תפקיד</th><th>דירה</th><th>כניסה אחרונה</th></tr></thead>
             <tbody>
               {users.filter((u) => u.role !== 'pending').map((u) => (
-                <tr key={u.id}><td>{u.full_name || <span dir="ltr">+{u.phone}</span>}</td><td>{ROLES[u.role]}</td>
+                <tr key={u.id}><td>{u.full_name || <span dir="ltr">{u.email}</span>}</td><td>{ROLES[u.role]}</td>
                   <td>{aptLabel(u.apartment_id)}</td><td className="small">{fmtDateTime(u.last_seen_at) || '—'}</td></tr>
               ))}
-              {(invites.data || []).filter((i) => !users.some((u) => u.phone === i.phone)).map((i) => (
-                <tr key={i.phone}><td>{i.full_name}</td><td>{ROLES[i.role]}</td><td>{aptLabel(i.apartment_id)}</td>
+              {(invites.data || []).filter((i) => !users.some((u) => u.email === i.email)).map((i) => (
+                <tr key={i.email}><td>{i.full_name}</td><td>{ROLES[i.role]}</td><td>{aptLabel(i.apartment_id)}</td>
                   <td className="small">טרם נכנס</td></tr>
               ))}
             </tbody></table></div>

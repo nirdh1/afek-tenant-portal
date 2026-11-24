@@ -50,7 +50,8 @@ export function InviteForm({ apartments, apartmentId }) {
   return (
     <form action={action} key={state?.ok}>
       <label htmlFor="inv-name">שם מלא</label><input id="inv-name" name="full_name" required />
-      <label htmlFor="inv-phone">טלפון נייד</label><input id="inv-phone" name="phone" type="tel" dir="ltr" required />
+      <label htmlFor="inv-email">כתובת מייל (לכניסה)</label><input id="inv-email" name="email" type="email" dir="ltr" required />
+      <label htmlFor="inv-phone">טלפון נייד</label><input id="inv-phone" name="phone" type="tel" dir="ltr" />
       <label htmlFor="inv-role">תפקיד</label>
       <select id="inv-role" name="role" defaultValue="tenant">
         {['tenant', 'lawyer', 'admin'].map((r) => <option key={r} value={r}>{ROLES[r]}</option>)}

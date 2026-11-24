@@ -13,7 +13,7 @@ export default async function MePage() {
 
   if (profile.role === 'pending') {
     return <div className="card login"><h3>החשבון ממתין לאישור</h3>
-      <p>מספר הטלפון שלכם עדיין לא שויך לדירה. הנציגות תאמת את הפרטים ותאשר את הגישה.</p></div>
+      <p>כתובת המייל שלכם עדיין לא שויכה לדירה. הנציגות תאמת את הפרטים ותאשר את הגישה.</p></div>
   }
 
   const apt = profile.apartment
@@ -27,7 +27,7 @@ export default async function MePage() {
       <div className="card">
         <div className="small">שלום,</div>
         <div style={{ fontSize: 22, fontWeight: 800 }}>{profile.full_name || 'דייר/ת'}</div>
-        <div className="small">{apt ? `${apt.building}, דירה ${apt.unit}` : ''} · <span dir="ltr">+{profile.phone}</span></div>
+        <div className="small">{apt ? `${apt.building}, דירה ${apt.unit}` : ''} · <span dir="ltr">{profile.email}</span></div>
       </div>
 
       <div className="grid g2">

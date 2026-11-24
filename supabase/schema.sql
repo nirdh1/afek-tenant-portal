@@ -30,9 +30,10 @@ create table apartments (
 );
 
 -- ===== משתמשים =====
--- הזמנה: הנציגות מוסיפה מספר טלפון, וכשהדייר נכנס בפעם הראשונה הוא משויך אוטומטית
+-- הזמנה: הנציגות מוסיפה כתובת מייל, וכשהדייר נכנס בפעם הראשונה הוא משויך אוטומטית
 create table invites (
-  phone        text primary key,            -- בפורמט 9725XXXXXXXX (בלי +)
+  email        text primary key,            -- כתובת המייל שאיתה הדייר נכנס (באותיות קטנות)
+  phone        text,                        -- טלפון ליצירת קשר
   full_name    text,
   role         user_role not null default 'tenant',
   apartment_id bigint references apartments on delete set null,
@@ -104,7 +105,8 @@ insert into project_status default values;
 create table registration_requests (
   id         bigserial primary key,
   full_name  text not null,
-  phone      text not null,
+  email      text,
+  phone      text,
   address    text,
   handled    boolean not null default false,
   created_at timestamptz not null default now()
@@ -157,9 +159,9 @@ create or replace function handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare inv invites;
 begin
-  select * into inv from invites where phone = new.phone;
-  insert into profiles (id, phone, full_name, role, apartment_id)
-  values (new.id, new.phone, inv.full_name, coalesce(inv.role, 'pending'), inv.apartment_id);
+  select * into inv from invites where email = lower(new.email);
+  insert into profiles (id, email, phone, full_name, role, apartment_id)
+  values (new.id, lower(new.email), inv.phone, inv.full_name, coalesce(inv.role, 'pending'), inv.apartment_id);
   return new;
 end $$;
 
@@ -190,14 +192,14 @@ end $$;
 
 -- עדכון פרטים עצמי של דייר (רק השדות המותרים)
 create or replace function update_my_details(
-  p_full_name text, p_email text, p_occupancy occupancy,
+  p_full_name text, p_phone text, p_occupancy occupancy,
   p_renter_name text, p_renter_phone text, p_lease_end date
 ) returns void
 language plpgsql security definer set search_path = public as $$
 declare apt bigint := my_apartment();
 begin
   if auth.uid() is null or my_role() = 'pending' then raise exception 'not allowed'; end if;
-  update profiles set full_name = p_full_name, email = p_email where id = auth.uid();
+  update profiles set full_name = p_full_name, phone = p_phone where id = auth.uid();
   if apt is not null then
     update apartments set
       occupancy    = p_occupancy,

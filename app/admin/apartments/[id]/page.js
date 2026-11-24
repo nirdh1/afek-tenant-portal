@@ -42,10 +42,10 @@ export default async function ApartmentPage({ params }) {
         <div className="card"><h3>בעלי הדירה</h3>
           {(owners || []).map((o) => (
             <div className="item" key={o.id}><b>{o.full_name || 'ללא שם'}</b>
-              <span className="small"><span dir="ltr">+{o.phone}</span> · {o.email || 'ללא דוא"ל'} · {ROLES[o.role]} · כניסה אחרונה {fmtDateTime(o.last_seen_at) || '—'}</span></div>
+              <span className="small"><span dir="ltr">{o.email}</span> · <span dir="ltr">{o.phone || 'ללא טלפון'}</span> · {ROLES[o.role]} · כניסה אחרונה {fmtDateTime(o.last_seen_at) || '—'}</span></div>
           ))}
-          {(invites || []).filter((i) => !(owners || []).some((o) => o.phone === i.phone)).map((i) => (
-            <div className="item" key={i.phone}><b>{i.full_name}</b><span className="small"><span dir="ltr">+{i.phone}</span> · טרם נכנס</span></div>
+          {(invites || []).filter((i) => !(owners || []).some((o) => o.email === i.email)).map((i) => (
+            <div className="item" key={i.email}><b>{i.full_name}</b><span className="small"><span dir="ltr">{i.email}</span> · טרם נכנס</span></div>
           ))}
           <h3 style={{ marginTop: 20 }}>הוספת בעלים</h3>
           <InviteForm apartmentId={apt.id} />

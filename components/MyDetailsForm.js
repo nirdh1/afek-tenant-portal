@@ -11,8 +11,8 @@ export default function MyDetailsForm({ profile, apartment }) {
     <form action={action}>
       <label htmlFor="full_name">שם מלא</label>
       <input id="full_name" name="full_name" defaultValue={profile.full_name || ''} />
-      <label htmlFor="email">דוא"ל</label>
-      <input id="email" name="email" type="email" dir="ltr" defaultValue={profile.email || ''} />
+      <label htmlFor="phone">טלפון נייד</label>
+      <input id="phone" name="phone" type="tel" dir="ltr" defaultValue={profile.phone || ''} />
       {apartment && <>
         <label htmlFor="occupancy">מי גר בדירה?</label>
         <select id="occupancy" name="occupancy" value={occ} onChange={(e) => setOcc(e.target.value)}>

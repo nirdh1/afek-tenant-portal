@@ -2,7 +2,6 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { normalizePhone } from '@/lib/labels'
 
 const val = (f, k) => {
   const v = f.get(k)
@@ -15,7 +14,7 @@ const log = (supabase, action, details) => supabase.rpc('log_activity', { p_acti
 export async function updateMyDetails(_prev, f) {
   const supabase = await createClient()
   const { error } = await supabase.rpc('update_my_details', {
-    p_full_name: val(f, 'full_name'), p_email: val(f, 'email'), p_occupancy: val(f, 'occupancy') || 'owner',
+    p_full_name: val(f, 'full_name'), p_phone: val(f, 'phone'), p_occupancy: val(f, 'occupancy') || 'owner',
     p_renter_name: val(f, 'renter_name'), p_renter_phone: val(f, 'renter_phone'), p_lease_end: val(f, 'lease_end'),
   })
   revalidatePath('/me')
@@ -91,16 +90,16 @@ export async function updateApartment(_prev, f) {
 
 export async function inviteUser(_prev, f) {
   const supabase = await createClient()
-  const phone = normalizePhone(val(f, 'phone'))
-  if (phone.length < 11) return { error: 'מספר טלפון לא תקין' }
-  const row = { phone, full_name: val(f, 'full_name'), role: val(f, 'role') || 'tenant', apartment_id: num(f, 'apartment_id') }
+  const email = (val(f, 'email') || '').toLowerCase()
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'כתובת מייל לא תקינה' }
+  const row = { email, phone: val(f, 'phone'), full_name: val(f, 'full_name'), role: val(f, 'role') || 'tenant', apartment_id: num(f, 'apartment_id') }
   const { error } = await supabase.from('invites').upsert(row)
   if (error) return { error: 'השמירה נכשלה' }
   // אם המשתמש כבר נכנס בעבר, מעדכנים גם את הפרופיל הקיים
-  await supabase.from('profiles').update({ role: row.role, apartment_id: row.apartment_id, full_name: row.full_name }).eq('phone', phone)
-  await log(supabase, 'הוסיף משתמש מורשה', `${row.full_name || ''} ${phone}`)
+  await supabase.from('profiles').update({ role: row.role, apartment_id: row.apartment_id, full_name: row.full_name }).eq('email', email)
+  await log(supabase, 'הוסיף משתמש מורשה', `${row.full_name || ''} ${email}`)
   revalidatePath('/admin'); if (row.apartment_id) revalidatePath(`/admin/apartments/${row.apartment_id}`)
-  return { ok: 'נשמר. המשתמש יוכל להיכנס עם מספר הטלפון.' }
+  return { ok: 'נשמר. המשתמש יוכל להיכנס עם כתובת המייל הזו.' }
 }
 
 export async function updateProfile(f) {
