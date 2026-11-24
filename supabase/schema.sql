@@ -105,9 +105,9 @@ insert into project_status default values;
 create table registration_requests (
   id         bigserial primary key,
   full_name  text not null,
-  email      text,
-  phone      text,
-  address    text,
+  email      text not null,
+  phone      text not null,
+  address    text not null,
   handled    boolean not null default false,
   created_at timestamptz not null default now()
 );

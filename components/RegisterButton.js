@@ -28,8 +28,8 @@ export default function RegisterButton() {
             {msg ? <p className="okmsg">{msg}</p> : <>
               <label htmlFor="full_name">שם מלא</label><input id="full_name" name="full_name" required />
               <label htmlFor="reg-email">כתובת מייל</label><input id="reg-email" name="email" type="email" dir="ltr" required />
-              <label htmlFor="phone">טלפון נייד</label><input id="phone" name="phone" type="tel" dir="ltr" />
-              <label htmlFor="address">כתובת ומספר דירה</label><input id="address" name="address" placeholder="רבין 12, דירה 7" />
+              <label htmlFor="phone">טלפון נייד</label><input id="phone" name="phone" type="tel" dir="ltr" required pattern="0?5[0-9][- ]?[0-9]{3}[- ]?[0-9]{4}" title="מספר נייד ישראלי, למשל 050-1234567" />
+              <label htmlFor="address">כתובת ומספר דירה</label><input id="address" name="address" placeholder="רבין 12, דירה 7" required />
             </>}
             <div className="row">
               {!msg && <button className="btn btn-gold" disabled={busy}>שליחת בקשה</button>}
