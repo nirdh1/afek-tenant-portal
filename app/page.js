@@ -54,13 +54,9 @@ export default async function Home() {
         <RegisterButton />
       </div>
 
-      <div className="grid g3">
+      <div className="grid g2">
         <div className="card stat"><div className="lbl">מצב הפרויקט</div><div className="val">{status?.stage}</div>
           <div className="small">עודכן {fmtDate(status?.updated_at)}</div></div>
-        <div className="card stat"><div className="lbl">חתימות על ההסכם</div>
-          <div className="val">{stats?.signed ?? 0} / {stats?.apartments ?? 0}</div>
-          <div className="progress"><span style={{ width: `${stats?.apartments ? (stats.signed / stats.apartments) * 100 : 0}%` }} /></div>
-          <div className="small">יעד: {status?.signed_target}%</div></div>
         <div className="card stat"><div className="lbl">המסמך המרכזי</div><div className="val">אוגדן ההסכם</div>
           <div className="small">זמין לדיירים מאומתים באזור האישי</div></div>
       </div>
