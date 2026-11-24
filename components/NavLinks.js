@@ -8,7 +8,9 @@ export default function NavLinks({ links, loggedIn }) {
   return (
     <nav>
       {links.map((l) => (
-        <Link key={l.href} href={l.href} className={active(l.href) ? 'active' : ''}>{l.label}</Link>
+        <Link key={l.href} href={l.href} className={active(l.href) ? 'active' : ''}>
+          {l.label}{l.badge > 0 && <span className="nav-badge" aria-label={`${l.badge} ממתינים`}>{l.badge}</span>}
+        </Link>
       ))}
       <span className="spacer" />
       {loggedIn

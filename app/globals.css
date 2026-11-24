@@ -94,3 +94,7 @@ button[disabled]{opacity:.6;cursor:default}
 .featured-img{display:block;max-width:100%;max-height:80vh;margin:6px auto 16px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
 .featured-pdf{display:block;width:100%;height:75vh;border:1px solid var(--line);border-radius:12px;margin:6px 0 16px}
 .post-img{display:block;max-width:100%;max-height:520px;margin-top:10px;border-radius:10px;border:1px solid var(--line)}
+nav a{position:relative}
+.nav-badge{display:inline-block;min-width:20px;height:20px;line-height:20px;padding:0 6px;margin-inline-start:8px;border-radius:99px;background:#d92d20;color:#fff;font-size:12px;font-weight:700;text-align:center;vertical-align:middle}
+.alert-bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:#fff4e5;border:1px solid #f5c27a;border-radius:10px;padding:10px 16px;margin:-6px 0 18px}
+.alert-bar a{font-weight:600}
