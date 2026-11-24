@@ -109,6 +109,20 @@ export async function updateProfile(f) {
   revalidatePath('/admin')
 }
 
+// אישור בקשת הרשמה: יוצר הרשאת כניסה לדייר עם הדירה שנבחרה
+export async function approveRequest(f) {
+  const supabase = await createClient()
+  const { data: r } = await supabase.from('registration_requests').select('*').eq('id', num(f, 'id')).single()
+  if (!r) return
+  const email = (r.email || '').toLowerCase()
+  const row = { email, phone: r.phone, full_name: r.full_name, role: 'tenant', apartment_id: num(f, 'apartment_id') }
+  await supabase.from('invites').upsert(row)
+  await supabase.from('profiles').update({ role: 'tenant', apartment_id: row.apartment_id, full_name: r.full_name }).eq('email', email)
+  await supabase.from('registration_requests').update({ handled: true }).eq('id', r.id)
+  await log(supabase, 'אישר בקשת הרשמה', `${r.full_name} ${email}`)
+  revalidatePath('/admin')
+}
+
 export async function markRequestHandled(f) {
   const supabase = await createClient()
   await supabase.from('registration_requests').update({ handled: true }).eq('id', num(f, 'id'))

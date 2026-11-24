@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { DOC_CATEGORIES, OCCUPANCY, ROLES, fmtDate, fmtDateTime } from '@/lib/labels'
-import { markRequestHandled, updateProfile, deleteMeeting, deleteDocument } from '@/app/actions'
+import { approveRequest, markRequestHandled, updateProfile, deleteMeeting, deleteDocument } from '@/app/actions'
 import { ApartmentForm, InviteForm, UploadForm, MeetingForm, StatusForm } from '@/components/AdminForms'
 
 export const dynamic = 'force-dynamic'
@@ -61,11 +61,21 @@ export default async function AdminPage({ searchParams }) {
             </form>
           ))}
           {requests.data?.map((r) => (
-            <form key={r.id} action={markRequestHandled} className="inline">
-              <input type="hidden" name="id" value={r.id} />
-              <span>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email} {r.phone}</span> · {r.address} · {fmtDate(r.created_at)}</span>
-              <button className="btn btn-light">טופל</button>
-            </form>
+            <div key={r.id} className="item">
+              <div>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email}</span> · <span dir="ltr">{r.phone}</span> · {r.address} · <span className="small">{fmtDate(r.created_at)}</span></div>
+              <div className="inline">
+                <form action={approveRequest} className="inline" style={{ marginTop: 0, flex: 1 }}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <select name="apartment_id" required defaultValue=""><option value="" disabled>שיוך לדירה</option>
+                    {apartments.map((a) => <option key={a.id} value={a.id}>{a.building} / {a.unit}</option>)}</select>
+                  <button className="btn btn-navy">אישור</button>
+                </form>
+                <form action={markRequestHandled}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <button className="btn btn-light">דחייה</button>
+                </form>
+              </div>
+            </div>
           ))}
         </div>
       )}
