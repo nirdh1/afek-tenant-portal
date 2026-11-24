@@ -5,6 +5,11 @@ const PROTECTED = ['/me', '/board', '/admin', '/doc']
 
 export async function middleware(request) {
   let response = NextResponse.next({ request })
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return new NextResponse('האתר עדיין לא מחובר ל-Supabase: חסרים משתני הסביבה NEXT_PUBLIC_SUPABASE_URL ו-NEXT_PUBLIC_SUPABASE_ANON_KEY ב-Vercel.', {
+      status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' },
+    })
+  }
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
