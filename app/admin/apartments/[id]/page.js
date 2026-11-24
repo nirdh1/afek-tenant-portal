@@ -18,6 +18,8 @@ export default async function ApartmentPage({ params }) {
     supabase.from('documents').select('*').eq('apartment_id', id).order('created_at', { ascending: false }),
   ])
   const ownerIds = (owners || []).map((o) => o.id)
+  const { data: votes } = await supabase.from('ownership_votes').select('*').eq('apartment_id', id)
+  const voteCount = (oid, v) => (votes || []).filter((x) => x.subject_id === oid && x.vote === v && !(v === 'report' && x.resolved)).length
   const { data: acts } = ownerIds.length
     ? await supabase.from('activity_log').select('*').in('user_id', ownerIds).order('created_at', { ascending: false }).limit(50)
     : { data: [] }
@@ -42,7 +44,9 @@ export default async function ApartmentPage({ params }) {
         </div>
         <div className="card"><h3>בעלי הדירה</h3>
           {(owners || []).map((o) => (
-            <div className="item" key={o.id}><b>{o.full_name || 'ללא שם'}</b>
+            <div className="item" key={o.id}><b>{o.full_name || 'ללא שם'}</b>{' '}
+              {voteCount(o.id, 'confirm') > 0 && <span className="pill ok">אושר על ידי {voteCount(o.id, 'confirm')}</span>}{' '}
+              {voteCount(o.id, 'report') > 0 && <span className="pill wait">{voteCount(o.id, 'report')} דיווחים</span>}
               <span className="small"><span dir="ltr">{o.email}</span> · <span dir="ltr">{o.phone || 'ללא טלפון'}</span> · {ROLES[o.role]} · כניסה אחרונה {fmtDateTime(o.last_seen_at) || '—'}</span></div>
           ))}
           {(invites || []).filter((i) => !(owners || []).some((o) => o.email === i.email)).map((i) => (

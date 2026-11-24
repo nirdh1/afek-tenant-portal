@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { DOC_CATEGORIES, OCCUPANCY, ROLES, fmtDate, fmtDateTime } from '@/lib/labels'
-import { approveRequest, markRequestHandled, updateProfile, deleteDocument } from '@/app/actions'
+import { approveRequest, markRequestHandled, updateProfile, deleteDocument, resolveReport } from '@/app/actions'
 import { ApartmentForm, InviteForm, UploadForm, StatusForm } from '@/components/AdminForms'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +22,7 @@ export default async function AdminPage({ searchParams }) {
     supabase.from('documents').select('*').is('apartment_id', null).neq('category', 'binder').order('created_at', { ascending: false }),
     supabase.from('posts').select('id, replies(id)').eq('to_lawyers', true),
   ])
+  const { data: reports } = await supabase.from('ownership_votes').select('*').eq('vote', 'report').eq('resolved', false).order('created_at', { ascending: false })
   const { count: pendingPosts } = await supabase.from('posts').select('id', { count: 'exact', head: true }).eq('approved', false)
   const apartments = apts.data || []
   const users = profiles.data || []
@@ -48,6 +49,35 @@ export default async function AdminPage({ searchParams }) {
         <div className="card stat"><div className="lbl">שאלות לעורכי הדין שלא נענו</div><div className="val">{unanswered}</div>
           <div className="small"><Link href="/board?cat=lawyers">ללוח השאלות</Link></div></div>
       </div>
+
+      {reports?.length > 0 && (
+        <div className="card" style={{ marginTop: 18, borderColor: 'var(--gold)' }}><h3>דיווחים על בעלות ({reports.length})</h3>
+          {Object.values(reports.reduce((acc, r) => { (acc[r.subject_id] ||= []).push(r); return acc }, {})).map((rs) => {
+            const r = rs[0]
+            const subj = users.find((u) => u.id === r.subject_id)
+            const voters = rs.map((x) => users.find((u) => u.id === x.voter_id)?.full_name || 'בעלים').join(', ')
+            const label = `${subj?.full_name || ''} ${subj?.email || ''} · ${aptLabel(r.apartment_id)}`
+            return (
+              <div className="item" key={r.subject_id}>
+                <div><b>{subj?.full_name || 'ללא שם'}</b> (<span dir="ltr">{subj?.email}</span>) רשום על <Link href={`/admin/apartments/${r.apartment_id}`}>{aptLabel(r.apartment_id)}</Link></div>
+                <div className="small">דווח על ידי: {voters}{rs.some((x) => x.note) && <> · הערות: {rs.filter((x) => x.note).map((x) => x.note).join(' | ')}</>}</div>
+                <div className="inline">
+                  <form action={resolveReport}>
+                    <input type="hidden" name="subject" value={r.subject_id} /><input type="hidden" name="action" value="remove" />
+                    <input type="hidden" name="label" value={label} /><input type="hidden" name="apartment_id" value={r.apartment_id} />
+                    <button className="btn btn-navy" style={{ padding: '6px 14px' }}>הסרה מהדירה</button>
+                  </form>
+                  <form action={resolveReport}>
+                    <input type="hidden" name="subject" value={r.subject_id} /><input type="hidden" name="action" value="dismiss" />
+                    <input type="hidden" name="label" value={label} /><input type="hidden" name="apartment_id" value={r.apartment_id} />
+                    <button className="btn btn-light" style={{ padding: '6px 14px' }}>הדיווח לא נכון, להשאיר</button>
+                  </form>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {pendingPosts > 0 && (
         <div className="note" style={{ marginTop: 18 }}>

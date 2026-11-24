@@ -238,3 +238,30 @@ export async function updateStatus(_prev, f) {
   revalidatePath('/'); revalidatePath('/admin')
   return { ok: 'נשמר' }
 }
+
+// ---------- אימות בעלות ----------
+export async function voteOwner(_prev, f) {
+  const supabase = await createClient()
+  const vote = val(f, 'vote')
+  const { error } = await supabase.rpc('vote_owner', { p_subject: val(f, 'subject'), p_vote: vote, p_note: val(f, 'note') })
+  revalidatePath('/me'); revalidatePath('/admin')
+  if (error) return { error: 'הפעולה נכשלה' }
+  return { ok: vote === 'confirm' ? 'תודה, האישור נרשם.' : 'הדיווח נשלח לנציגות, והיא תבדוק אותו.' }
+}
+
+export async function resolveReport(f) {
+  const supabase = await createClient()
+  const subject = val(f, 'subject')
+  const remove = val(f, 'action') === 'remove'
+  if (remove) {
+    const { data: p } = await supabase.from('profiles').select('email, apartment_id').eq('id', subject).single()
+    await supabase.from('profiles').update({ apartment_id: null, role: 'pending' }).eq('id', subject)
+    if (p?.email) await supabase.from('invites').delete().eq('email', p.email)
+    await supabase.from('ownership_votes').delete().eq('subject_id', subject)
+  } else {
+    await supabase.from('ownership_votes').update({ resolved: true }).eq('subject_id', subject).eq('vote', 'report')
+  }
+  await log(supabase, remove ? 'הסיר משתמש מדירה בעקבות דיווח' : 'דחה דיווח על בעלות', val(f, 'label'))
+  revalidatePath('/admin'); revalidatePath('/me')
+  const apt = val(f, 'apartment_id'); if (apt) revalidatePath(`/admin/apartments/${apt}`)
+}

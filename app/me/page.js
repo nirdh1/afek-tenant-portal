@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getMe } from '@/lib/supabase/server'
 import { DOC_CATEGORIES, fmtDate } from '@/lib/labels'
 import MyDetailsForm from '@/components/MyDetailsForm'
+import CoOwners from '@/components/CoOwners'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,7 @@ export default async function MePage() {
 
   const apt = profile.apartment
   const { data: docs } = await supabase.from('documents').select('*').order('created_at', { ascending: false })
+  const { data: owners } = apt ? await supabase.rpc('my_coowners') : { data: [] }
   const myDocs = (docs || []).filter((d) => d.apartment_id)
   const generalDocs = (docs || []).filter((d) => !d.apartment_id)
   const step = apt?.signed ? 4 : 1
@@ -47,6 +49,10 @@ export default async function MePage() {
             <dt>שטח לפי מדידה</dt><dd>{apt.measured_area ? `${apt.measured_area} מ"ר` : 'טרם נמדד'}{apt.measured_at && <span className="small"> · {fmtDate(apt.measured_at)}</span>}</dd>
             <dt>תמורה מוצעת</dt><dd>{apt.compensation || 'לפי ההסכם הסופי'}</dd>
           </dl>
+        </div>}
+
+        {apt && <div className="card"><h3>בעלי הדירה הרשומים ({owners?.length || 0})</h3>
+          <CoOwners owners={owners || []} />
         </div>}
 
         <div className="card"><h3>המסמכים שלי</h3>
