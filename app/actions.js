@@ -130,35 +130,43 @@ export async function updateProfile(f) {
 }
 
 // אישור בקשת הרשמה: משייך את הדייר לדירה קיימת, או יוצר דירה חדשה לפי הכתובת
-export async function approveRequest(f) {
+export async function approveRequest(_prev, f) {
   const supabase = await createClient()
   const { data: r } = await supabase.from('registration_requests').select('*').eq('id', num(f, 'id')).single()
-  if (!r) return
+  if (!r) return { error: 'הבקשה לא נמצאה' }
   const email = (r.email || '').toLowerCase()
   let aptId = num(f, 'apartment_id')
   if (!aptId) {
     const building = val(f, 'building'), unit = val(f, 'unit')
-    if (!building || !unit) return
-    const { data: apt } = await supabase.from('apartments')
-      .upsert({ building, unit }, { onConflict: 'building,unit' }).select('id').single()
-    aptId = apt?.id
-    if (aptId) await log(supabase, 'הוסיף דירה', `${building} / ${unit}`)
+    if (!building || !unit) return { error: 'בחר דירה קיימת מהרשימה, או מלא בניין ומספר דירה כדי ליצור דירה חדשה' }
+    const { data: found } = await supabase.from('apartments').select('id').eq('building', building).eq('unit', unit).maybeSingle()
+    if (found) aptId = found.id
+    else {
+      const { data: apt, error } = await supabase.from('apartments').insert({ building, unit }).select('id').single()
+      if (error) return { error: 'יצירת הדירה נכשלה' }
+      aptId = apt.id
+      await log(supabase, 'הוסיף דירה', `${building} / ${unit}`)
+    }
   }
   // לא מורידים הרשאה של מנהל או עורך דין שנרשם גם כדייר
   const { data: existing } = await supabase.from('invites').select('role').eq('email', email).maybeSingle()
   const { data: prof } = await supabase.from('profiles').select('role').eq('email', email).maybeSingle()
-  const keep = [existing?.role, prof?.role].find((x) => x === 'admin' || x === 'lawyer')
-  const role = keep || 'tenant'
-  await supabase.from('invites').upsert({ email, phone: r.phone, full_name: r.full_name, role, apartment_id: aptId })
+  const role = [existing?.role, prof?.role].find((x) => x === 'admin' || x === 'lawyer') || 'tenant'
+  const { error: invErr } = await supabase.from('invites').upsert({ email, phone: r.phone, full_name: r.full_name, role, apartment_id: aptId })
+  if (invErr) return { error: 'השמירה נכשלה' }
   await supabase.from('profiles').update({ role, apartment_id: aptId, full_name: r.full_name, phone: r.phone }).eq('email', email)
-  await supabase.from('registration_requests').update({ handled: true, status: 'approved' }).eq('id', r.id)
+  // סוגרים את כל הבקשות של אותו מייל (גם כפולות)
+  await supabase.from('registration_requests').update({ handled: true }).eq('email', r.email)
+  await supabase.from('registration_requests').update({ status: 'approved' }).eq('email', r.email)
   await log(supabase, 'אישר בקשת הרשמה', `${r.full_name} ${email}`)
   revalidatePath('/admin'); revalidatePath('/admin/users')
+  return { ok: 'אושר' }
 }
 
 export async function markRequestHandled(f) {
   const supabase = await createClient()
-  await supabase.from('registration_requests').update({ handled: true, status: 'rejected' }).eq('id', num(f, 'id'))
+  await supabase.from('registration_requests').update({ handled: true }).eq('id', num(f, 'id'))
+  await supabase.from('registration_requests').update({ status: 'rejected' }).eq('id', num(f, 'id'))
   await log(supabase, 'דחה בקשת הרשמה', val(f, 'label'))
   revalidatePath('/admin')
 }

@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { DOC_CATEGORIES, OCCUPANCY, ROLES, fmtDate, fmtDateTime } from '@/lib/labels'
-import { approveRequest, markRequestHandled, updateProfile, deleteDocument, resolveReport } from '@/app/actions'
+import { markRequestHandled, updateProfile, deleteDocument, resolveReport } from '@/app/actions'
 import { ApartmentForm, InviteForm, UploadForm, StatusForm } from '@/components/AdminForms'
+import ApproveRequestForm from '@/components/ApproveRequestForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,7 @@ export default async function AdminPage({ searchParams }) {
   const signed = apartments.filter((a) => a.signed).length
   const unanswered = (openQ.data || []).filter((p) => !p.replies?.length).length
   const pending = users.filter((u) => u.role === 'pending')
+  const aptOptions = apartments.map((a) => ({ id: a.id, label: `${a.building} / ${a.unit}`, owners: (ownersByApt[a.id] || []).map((o) => o.full_name || o.email) }))
   const aptLabel = (id) => { const a = apartments.find((x) => x.id === id); return a ? `${a.building} / ${a.unit}` : '—' }
   const shown = q ? apartments.filter((a) => `${a.building} ${a.unit} ${(ownersByApt[a.id] || []).map((o) => o.full_name).join(' ')}`.includes(q)) : apartments
 
@@ -97,25 +99,26 @@ export default async function AdminPage({ searchParams }) {
               <button className="btn btn-navy">אישור</button>
             </form>
           ))}
-          {requests.data?.map((r) => (
-            <div key={r.id} className="item">
-              <div>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email}</span>{r.phone && <> · <span dir="ltr">{r.phone}</span></>}{r.address && <> · {r.address}</>} · <span className="small">{fmtDate(r.created_at)}</span></div>
-              <form action={approveRequest} className="inline">
-                <input type="hidden" name="id" value={r.id} />
-                <select name="apartment_id" defaultValue="" style={{ flex: 2 }}>
-                  <option value="">דירה חדשה (לפי השדות משמאל)</option>
-                  {apartments.map((a) => <option key={a.id} value={a.id}>{a.building} / {a.unit}</option>)}
-                </select>
-                <input name="building" placeholder="בניין, למשל רבין 12" defaultValue={r.address || ''} />
-                <input name="unit" placeholder="מס' דירה" style={{ maxWidth: 110 }} />
-                <button className="btn btn-navy">אישור</button>
-              </form>
-              <form action={markRequestHandled} style={{ marginTop: 6 }}>
-                <input type="hidden" name="id" value={r.id} /><input type="hidden" name="label" value={`${r.full_name} ${r.email}`} />
-                <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>דחיית הבקשה</button>
-              </form>
-            </div>
-          ))}
+          {requests.data?.map((r) => {
+            const existing = users.find((u) => u.email && u.email === (r.email || '').toLowerCase())
+            const dupes = requests.data.filter((x) => x.email === r.email).length
+            return (
+              <div key={r.id} className="item">
+                <div>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email}</span>{r.phone && <> · <span dir="ltr">{r.phone}</span></>}{r.address && <> · {r.address}</>} · <span className="small">{fmtDate(r.created_at)}</span></div>
+                {(existing?.apartment_id || dupes > 1) && (
+                  <div className="small" style={{ color: 'var(--warn)' }}>
+                    {existing?.apartment_id && <>המשתמש כבר רשום כבעלים על {aptLabel(existing.apartment_id)}. </>}
+                    {dupes > 1 && <>יש {dupes} בקשות מאותו מייל. אישור אחת סוגר את כולן.</>}
+                  </div>
+                )}
+                <ApproveRequestForm request={r} apartments={aptOptions} suggestedId={existing?.apartment_id} />
+                <form action={markRequestHandled} style={{ marginTop: 6 }}>
+                  <input type="hidden" name="id" value={r.id} /><input type="hidden" name="label" value={`${r.full_name} ${r.email}`} />
+                  <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>דחיית הבקשה</button>
+                </form>
+              </div>
+            )
+          })}
         </div>
       )}
 
