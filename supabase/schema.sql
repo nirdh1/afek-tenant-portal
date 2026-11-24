@@ -55,7 +55,7 @@ create table profiles (
 create table documents (
   id           bigserial primary key,
   apartment_id bigint references apartments on delete cascade,  -- ריק = מסמך כללי
-  category     text not null check (category in ('nesach','agreement','sale_contract','presentation','measurement','other')),
+  category     text not null check (category in ('binder','nesach','agreement','sale_contract','presentation','measurement','other')),
   title        text not null,
   storage_path text not null unique,
   is_public    boolean not null default false,                  -- כללי לכל הדיירים המאומתים
@@ -73,6 +73,7 @@ create table posts (
   visibility      visibility not null default 'public',
   to_lawyers      boolean not null default false,
   is_announcement boolean not null default false,  -- מוצג גם בדף הבית הציבורי
+  approved        boolean not null default false,  -- הודעת דייר גלויה לאחרים רק אחרי אישור המנהל
   created_at      timestamptz not null default now()
 );
 
@@ -83,6 +84,7 @@ create table replies (
   author_id    uuid references profiles on delete set null default auth.uid(),
   author_label text,
   visibility   visibility not null default 'public',
+  approved     boolean not null default false,
   created_at   timestamptz not null default now()
 );
 
@@ -109,6 +111,7 @@ create table registration_requests (
   phone      text not null,
   address    text not null,
   handled    boolean not null default false,
+  status     text not null default 'pending' check (status in ('pending','approved','rejected')),
   created_at timestamptz not null default now()
 );
 
@@ -157,11 +160,17 @@ $$;
 -- משתמש חדש: יצירת פרופיל ושיוך לפי הזמנה
 create or replace function handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare inv invites;
+declare
+  inv invites;
+  req registration_requests;
 begin
   select * into inv from invites where email = lower(new.email);
+  -- פרטים מטופס ההרשמה, אם הדייר נרשם דרך האתר
+  select * into req from registration_requests where lower(email) = lower(new.email)
+    order by created_at desc limit 1;
   insert into profiles (id, email, phone, full_name, role, apartment_id)
-  values (new.id, lower(new.email), inv.phone, inv.full_name, coalesce(inv.role, 'pending'), inv.apartment_id);
+  values (new.id, lower(new.email), coalesce(inv.phone, req.phone), coalesce(inv.full_name, req.full_name),
+          coalesce(inv.role, 'pending'), inv.apartment_id);
   return new;
 end $$;
 
@@ -174,6 +183,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   new.author_id := auth.uid();
   new.author_label := user_label(auth.uid());
+  new.approved := is_staff();   -- הודעות של הנציגות ועורכי הדין מאושרות אוטומטית
   return new;
 end $$;
 
@@ -250,10 +260,18 @@ create policy doc_read  on documents for select using (
 create policy doc_admin on documents for all using (is_admin()) with check (is_admin());
 
 -- הודעות: פומביות לכל מאומת, פרטיות רק למחבר ולצוות
-create policy post_public on posts for select to anon using (is_announcement and visibility = 'public');
-create policy post_read   on posts for select to authenticated using (
-  is_staff() or (my_role() = 'tenant' and (visibility = 'public' or author_id = auth.uid()))
-);
+-- הודעות: דייר רואה את ההודעות שלו ואת מה שהמנהל אישר לפרסום.
+-- עורך דין רואה הודעות שנשלחו אליו ואת המאושרות. המנהל רואה הכול.
+create or replace function can_see_post(p posts) returns boolean
+language sql stable security definer set search_path = public as $$
+  select is_admin()
+    or p.author_id = auth.uid()
+    or (p.visibility = 'public' and p.approved and my_role() in ('tenant','lawyer'))
+    or (my_role() = 'lawyer' and p.to_lawyers)
+$$;
+
+create policy post_public on posts for select to anon using (is_announcement and visibility = 'public' and approved);
+create policy post_read   on posts for select to authenticated using (can_see_post(posts));
 create policy post_insert on posts for insert to authenticated with check (
   is_staff()
   or (my_role() = 'tenant' and category in ('lawyers','general') and not is_announcement)
@@ -262,16 +280,24 @@ create policy post_admin on posts for update using (is_admin()) with check (is_a
 create policy post_del   on posts for delete using (is_admin());
 
 create policy rep_read on replies for select to authenticated using (
-  is_staff()
-  or exists (
-    select 1 from posts p where p.id = post_id
-      and (p.author_id = auth.uid() or (p.visibility = 'public' and replies.visibility = 'public'))
+  exists (
+    select 1 from posts p where p.id = post_id and can_see_post(p)
+      and (
+        is_admin()
+        or p.author_id = auth.uid()
+        or replies.author_id = auth.uid()
+        or (my_role() = 'lawyer' and p.to_lawyers)
+        or (replies.visibility = 'public' and replies.approved)
+      )
   )
 );
 create policy rep_insert on replies for insert to authenticated with check (
-  is_staff()
-  or exists (select 1 from posts p where p.id = post_id and p.author_id = auth.uid())
+  exists (
+    select 1 from posts p where p.id = post_id and can_see_post(p)
+      and (is_staff() or p.author_id = auth.uid())
+  )
 );
+create policy rep_admin on replies for update using (is_admin()) with check (is_admin());
 create policy rep_del on replies for delete using (is_admin());
 
 create policy meet_read  on meetings for select using (true);

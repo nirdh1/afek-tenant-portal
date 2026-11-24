@@ -69,18 +69,19 @@ export function InviteForm({ apartments, apartmentId }) {
   )
 }
 
-export function UploadForm({ apartmentId }) {
+export function UploadForm({ apartmentId, category }) {
   const [state, action, pending] = useForm(A.uploadDocument)
   return (
     <form action={action} key={state?.ok}>
       {apartmentId && <input type="hidden" name="apartment_id" value={apartmentId} />}
+      {category ? <><input type="hidden" name="category" value={category} /><input type="hidden" name="is_public" value="on" /></> : <>
       <label htmlFor="doc-cat">סוג מסמך</label>
       <select id="doc-cat" name="category" defaultValue={apartmentId ? 'nesach' : 'presentation'}>
         {Object.entries(DOC_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-      </select>
+      </select></>}
       <label htmlFor="doc-title">שם המסמך</label><input id="doc-title" name="title" placeholder="נסח טאבו 10.2026" />
       <label htmlFor="doc-file">קובץ</label><input id="doc-file" name="file" type="file" required />
-      {!apartmentId && <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'center' }}>
+      {!apartmentId && !category && <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'center' }}>
         <input type="checkbox" name="is_public" defaultChecked style={{ width: 'auto' }} /> גלוי לכל הדיירים המאומתים</label>}
       <div className="row"><button className="btn btn-navy" disabled={pending}>העלאה</button></div>
       <FormStatus state={state} />
@@ -88,18 +89,31 @@ export function UploadForm({ apartmentId }) {
   )
 }
 
-export function MeetingForm() {
-  const [state, action, pending] = useForm(A.createMeeting)
+// פיצול תאריך ושעה לפי שעון ישראל
+function ilParts(iso) {
+  if (!iso) return { date: '', time: '' }
+  const d = new Date(iso)
+  const date = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' })
+  const time = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' })
+  return { date, time }
+}
+
+export function MeetingForm({ meeting }) {
+  const [state, action, pending] = useForm(meeting ? A.updateMeeting : A.createMeeting)
+  const m = meeting || {}
+  const { date, time } = ilParts(m.starts_at)
+  const p = m.id ? `m${m.id}-` : 'm-'
   return (
-    <form action={action} key={state?.ok}>
-      <label htmlFor="m-title">שם המפגש</label><input id="m-title" name="title" placeholder="כנס דיירים" required />
+    <form action={action} key={meeting ? m.id : state?.ok}>
+      {meeting && <input type="hidden" name="id" value={m.id} />}
+      <label htmlFor={p + 'title'}>שם האירוע</label><input id={p + 'title'} name="title" defaultValue={m.title || ''} placeholder="כנס דיירים" required />
       <div className="grid g2" style={{ marginTop: 0, gap: 10 }}>
-        <div><label htmlFor="m-date">תאריך</label><input id="m-date" name="date" type="date" required /></div>
-        <div><label htmlFor="m-time">שעה</label><input id="m-time" name="time" type="time" /></div>
+        <div><label htmlFor={p + 'date'}>תאריך</label><input id={p + 'date'} name="date" type="date" defaultValue={date} required /></div>
+        <div><label htmlFor={p + 'time'}>שעה</label><input id={p + 'time'} name="time" type="time" defaultValue={time} /></div>
       </div>
-      <label htmlFor="m-loc">מקום</label><input id="m-loc" name="location" />
-      <label htmlFor="m-notes">הערות</label><input id="m-notes" name="notes" />
-      <div className="row"><button className="btn btn-navy" disabled={pending}>פרסום מפגש</button></div>
+      <label htmlFor={p + 'loc'}>מקום</label><input id={p + 'loc'} name="location" defaultValue={m.location || ''} />
+      <label htmlFor={p + 'notes'}>פרטים נוספים</label><textarea id={p + 'notes'} name="notes" rows={2} defaultValue={m.notes || ''} />
+      <div className="row"><button className="btn btn-navy" disabled={pending}>{meeting ? 'שמירת שינויים' : 'פרסום אירוע'}</button></div>
       <FormStatus state={state} />
     </form>
   )

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PROTECTED = ['/me', '/board', '/admin', '/doc']
+const PROTECTED = ['/me', '/board', '/binder', '/admin', '/doc']
 
 export async function middleware(request) {
   let response = NextResponse.next({ request })

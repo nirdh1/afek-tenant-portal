@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { DOC_CATEGORIES, OCCUPANCY, ROLES, fmtDate, fmtDateTime } from '@/lib/labels'
-import { approveRequest, markRequestHandled, updateProfile, deleteMeeting, deleteDocument } from '@/app/actions'
-import { ApartmentForm, InviteForm, UploadForm, MeetingForm, StatusForm } from '@/components/AdminForms'
+import { approveRequest, markRequestHandled, updateProfile, deleteDocument } from '@/app/actions'
+import { ApartmentForm, InviteForm, UploadForm, StatusForm } from '@/components/AdminForms'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,9 +19,10 @@ export default async function AdminPage({ searchParams }) {
     acts,
     supabase.from('meetings').select('*').order('starts_at', { ascending: false }).limit(10),
     supabase.from('project_status').select('*').single(),
-    supabase.from('documents').select('*').is('apartment_id', null).order('created_at', { ascending: false }),
+    supabase.from('documents').select('*').is('apartment_id', null).neq('category', 'binder').order('created_at', { ascending: false }),
     supabase.from('posts').select('id, replies(id)').eq('to_lawyers', true),
   ])
+  const { count: pendingPosts } = await supabase.from('posts').select('id', { count: 'exact', head: true }).eq('approved', false)
   const apartments = apts.data || []
   const users = profiles.data || []
   const docsByApt = {}
@@ -48,6 +49,12 @@ export default async function AdminPage({ searchParams }) {
           <div className="small"><Link href="/board?cat=lawyers">ללוח השאלות</Link></div></div>
       </div>
 
+      {pendingPosts > 0 && (
+        <div className="note" style={{ marginTop: 18 }}>
+          יש <b>{pendingPosts}</b> הודעות של דיירים שממתינות לאישור שלך. <Link href="/board?pending=1">לצפייה ואישור</Link>
+        </div>
+      )}
+
       {(pending.length > 0 || requests.data?.length > 0) && (
         <div className="card" style={{ marginTop: 18 }}><h3>ממתינים לאישור</h3>
           {pending.map((u) => (
@@ -62,19 +69,21 @@ export default async function AdminPage({ searchParams }) {
           ))}
           {requests.data?.map((r) => (
             <div key={r.id} className="item">
-              <div>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email}</span> · <span dir="ltr">{r.phone}</span> · {r.address} · <span className="small">{fmtDate(r.created_at)}</span></div>
-              <div className="inline">
-                <form action={approveRequest} className="inline" style={{ marginTop: 0, flex: 1 }}>
-                  <input type="hidden" name="id" value={r.id} />
-                  <select name="apartment_id" required defaultValue=""><option value="" disabled>שיוך לדירה</option>
-                    {apartments.map((a) => <option key={a.id} value={a.id}>{a.building} / {a.unit}</option>)}</select>
-                  <button className="btn btn-navy">אישור</button>
-                </form>
-                <form action={markRequestHandled}>
-                  <input type="hidden" name="id" value={r.id} />
-                  <button className="btn btn-light">דחייה</button>
-                </form>
-              </div>
+              <div>בקשת הרשמה: <b>{r.full_name}</b> · <span dir="ltr">{r.email}</span>{r.phone && <> · <span dir="ltr">{r.phone}</span></>}{r.address && <> · {r.address}</>} · <span className="small">{fmtDate(r.created_at)}</span></div>
+              <form action={approveRequest} className="inline">
+                <input type="hidden" name="id" value={r.id} />
+                <select name="apartment_id" defaultValue="" style={{ flex: 2 }}>
+                  <option value="">דירה חדשה (לפי השדות משמאל)</option>
+                  {apartments.map((a) => <option key={a.id} value={a.id}>{a.building} / {a.unit}</option>)}
+                </select>
+                <input name="building" placeholder="בניין, למשל רבין 12" defaultValue={r.address || ''} />
+                <input name="unit" placeholder="מס' דירה" style={{ maxWidth: 110 }} />
+                <button className="btn btn-navy">אישור</button>
+              </form>
+              <form action={markRequestHandled} style={{ marginTop: 6 }}>
+                <input type="hidden" name="id" value={r.id} /><input type="hidden" name="label" value={`${r.full_name} ${r.email}`} />
+                <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>דחיית הבקשה</button>
+              </form>
             </div>
           ))}
         </div>
@@ -97,7 +106,7 @@ export default async function AdminPage({ searchParams }) {
                 <td>{OCCUPANCY[a.occupancy]}</td>
                 <td>{a.registered_area ?? '—'}</td>
                 <td>{a.measured_area ?? '—'}</td>
-                <td>{docsByApt[a.id]?.has('nesach') ? <span className="pill ok">קיים</span> : <span className="pill wait">חסר</span>}</td>
+                <td>{docsByApt[a.id]?.has('nesach') ? <span className="pill ok">קיים</span> : <Link href={`/admin/apartments/${a.id}#upload`} className="pill wait">חסר · העלאה</Link>}</td>
                 <td>{a.signed ? <span className="pill ok">נחתם</span> : <span className="pill wait">טרם נחתם</span>}</td>
                 <td className="small">{fmtDateTime(last) || '—'}</td>
               </tr>
@@ -112,28 +121,15 @@ export default async function AdminPage({ searchParams }) {
         <div className="card"><h3>הוספת משתמש מורשה</h3>
           <p className="small">דייר, עורך דין או חבר נציגות. הוא ייכנס עם כתובת המייל הזו.</p>
           <InviteForm apartments={apartments} /></div>
-        <div className="card"><h3>משתמשים</h3>
-          <div className="tbl"><table><thead><tr><th>שם</th><th>תפקיד</th><th>דירה</th><th>כניסה אחרונה</th></tr></thead>
-            <tbody>
-              {users.filter((u) => u.role !== 'pending').map((u) => (
-                <tr key={u.id}><td>{u.full_name || <span dir="ltr">{u.email}</span>}</td><td>{ROLES[u.role]}</td>
-                  <td>{aptLabel(u.apartment_id)}</td><td className="small">{fmtDateTime(u.last_seen_at) || '—'}</td></tr>
-              ))}
-              {(invites.data || []).filter((i) => !users.some((u) => u.email === i.email)).map((i) => (
-                <tr key={i.email}><td>{i.full_name}</td><td>{ROLES[i.role]}</td><td>{aptLabel(i.apartment_id)}</td>
-                  <td className="small">טרם נכנס</td></tr>
-              ))}
-            </tbody></table></div>
+        <div className="card"><h3>משתמשים ({users.filter((u) => u.role !== 'pending').length})</h3>
+          <p>את כל הנרשמים וכל הפרטים שהזינו, כולל טלפון, מגורים ופרטי שוכרים, רואים בלשונית <Link href="/admin/users">כל הנרשמים</Link>, ומשם אפשר גם לייצא לאקסל.</p>
         </div>
         <div className="card"><h3>מצב הפרויקט</h3><StatusForm status={status.data} /></div>
-        <div className="card"><h3>קביעת מפגש</h3><MeetingForm />
-          {meetings.data?.map((m) => (
-            <form key={m.id} action={deleteMeeting} className="inline">
-              <input type="hidden" name="id" value={m.id} />
-              <span style={{ flex: 1 }}>{m.title} · {fmtDateTime(m.starts_at)}</span>
-              <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>מחיקה</button>
-            </form>
-          ))}
+        <div className="card"><h3>אירועים קרובים</h3>
+          {meetings.data?.length ? meetings.data.slice(0, 4).map((m) => (
+            <div className="item" key={m.id}><b>{m.title}</b><span className="small">{fmtDateTime(m.starts_at)} · {m.location}</span></div>
+          )) : <p className="small">אין אירועים.</p>}
+          <div className="row"><Link className="btn btn-navy" href="/admin/events" style={{ textDecoration: 'none' }}>הוספה ועריכה של אירועים</Link></div>
         </div>
         <div className="card"><h3>מסמכים כלליים</h3>
           <p className="small">מצגות, חוזה מכר לדוגמה וכדומה. מסמך של דירה מסוימת (נסח, מדידה) מעלים מדף הדירה.</p>
@@ -148,7 +144,7 @@ export default async function AdminPage({ searchParams }) {
           ))}
         </div>
         <div className="card"><h3>פרסום עדכון</h3>
-          <p>עדכונים, כנסים וחוזי מכר מפרסמים מתוך <Link href="/board">לוח ההודעות</Link>. אפשר לסמן שם "להציג גם בדף הבית".</p></div>
+          <p>עדכונים והודעות מפרסמים מתוך <Link href="/board">לוח ההודעות</Link>. אפשר לסמן שם "להציג גם בדף הבית".</p></div>
       </div>
 
       <div className="card" style={{ marginTop: 18 }}><h3>מעקב פעילות משתמשים</h3>

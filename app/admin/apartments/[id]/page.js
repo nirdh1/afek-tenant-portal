@@ -36,7 +36,8 @@ export default async function ApartmentPage({ params }) {
               <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>מחיקה</button>
             </form>
           )) : <p className="small">אין מסמכים.</p>}
-          <h3 style={{ marginTop: 20 }}>העלאת מסמך</h3>
+          <h3 style={{ marginTop: 20 }} id="upload">העלאת נסח טאבו או מסמך אחר לדירה</h3>
+          <p className="small">המסמך יוצג רק לבעלי הדירה הזו, לנציגות ולעורכי הדין.</p>
           <UploadForm apartmentId={apt.id} />
         </div>
         <div className="card"><h3>בעלי הדירה</h3>

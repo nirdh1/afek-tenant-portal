@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMe } from '@/lib/supabase/server'
 import { CATEGORIES, fmtDateTime } from '@/lib/labels'
-import { createReply, deletePost } from '@/app/actions'
+import { createReply, deletePost, approvePost, approveReply } from '@/app/actions'
 import PostForm from '@/components/PostForm'
 
 export const dynamic = 'force-dynamic'
@@ -11,11 +11,13 @@ export default async function BoardPage({ searchParams }) {
   const { supabase, profile } = await getMe()
   if (!profile) redirect('/login')
   if (profile.role === 'pending') redirect('/me')
-  const { cat } = await searchParams
+  const { cat, pending } = await searchParams
+  const isAdmin = profile.role === 'admin'
   const staff = profile.role === 'admin' || profile.role === 'lawyer'
 
   let q = supabase.from('posts').select('*, replies(*)').order('created_at', { ascending: false }).limit(100)
   if (cat && CATEGORIES[cat]) q = q.eq('category', cat)
+  if (pending && isAdmin) q = q.eq('approved', false)
   const [{ data: posts }, { data: status }, { data: stats }] = await Promise.all([
     q, supabase.from('project_status').select('*').single(), supabase.rpc('public_stats'),
   ])
@@ -23,11 +25,12 @@ export default async function BoardPage({ searchParams }) {
   return (
     <section>
       <div className="card"><h3 style={{ margin: 0 }}>לוח הודעות ושאלות</h3>
-        <div className="small">כנסים, חוזי מכר, התקדמות ההסכם ושאלות לעורכי הדין של הפרויקט</div></div>
+        <div className="small">כנסים, התקדמות ההסכם ושאלות לעורכי הדין של הפרויקט</div></div>
       <div className="grid g2" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
         <div>
           <div className="chips">
-            <Link href="/board" className={`chip${!cat ? ' active' : ''}`}>הכול</Link>
+            <Link href="/board" className={`chip${!cat && !pending ? ' active' : ''}`}>הכול</Link>
+            {isAdmin && <Link href="/board?pending=1" className={`chip${pending ? ' active' : ''}`}>ממתינות לאישור שלך</Link>}
             {Object.entries(CATEGORIES).map(([k, v]) => (
               <Link key={k} href={`/board?cat=${k}`} className={`chip${cat === k ? ' active' : ''}`}>{v}</Link>
             ))}
@@ -38,8 +41,9 @@ export default async function BoardPage({ searchParams }) {
             return (
               <div className="post" key={p.id}>
                 <div className="meta">
-                  <span className="pill cat">{CATEGORIES[p.category]}</span>
+                  <span className="pill cat">{CATEGORIES[p.category] || "כללי"}</span>
                   {p.visibility === 'private' && <span className="pill lock">פרטי</span>}
+                  {!p.approved && p.visibility === 'public' && <span className="pill wait">ממתין לאישור פרסום</span>}
                   {p.to_lawyers && <span className="pill ok">נשלח לעורכי הדין</span>}
                   {p.is_announcement && <span className="pill ok">בדף הבית</span>}
                   <span>{p.author_label} · {fmtDateTime(p.created_at)}</span>
@@ -49,7 +53,13 @@ export default async function BoardPage({ searchParams }) {
                 {replies.map((r) => (
                   <div key={r.id} className={`reply${r.visibility === 'private' ? ' private' : ''}`}>
                     <b>{r.author_label}</b>{' '}
-                    {r.visibility === 'private' ? <span className="pill lock">תשובה פרטית</span> : <span className="pill ok">תשובה פומבית</span>}
+                    {r.visibility === 'private' ? <span className="pill lock">פרטי</span> : r.approved ? <span className="pill ok">פומבי</span> : <span className="pill wait">ממתין לאישור</span>}
+                    {isAdmin && !r.approved && (
+                      <form action={approveReply} style={{ display: 'inline', marginInlineStart: 8 }}>
+                        <input type="hidden" name="id" value={r.id} /><input type="hidden" name="title" value={p.title} />
+                        <button className="btn btn-gold" style={{ padding: '2px 10px', fontSize: 12 }}>פרסום לכל הדיירים</button>
+                      </form>
+                    )}
                     <div style={{ whiteSpace: 'pre-wrap' }}>{r.body}</div>
                     <span className="small">{fmtDateTime(r.created_at)}</span>
                   </div>
@@ -65,11 +75,19 @@ export default async function BoardPage({ searchParams }) {
                     <button className="btn btn-navy">שליחה</button>
                   </form>
                 )}
-                {profile.role === 'admin' && (
-                  <form action={deletePost} style={{ marginTop: 8 }}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>מחיקה</button>
-                  </form>
+                {isAdmin && (
+                  <div className="inline">
+                    {!p.approved && (
+                      <form action={approvePost}>
+                        <input type="hidden" name="id" value={p.id} /><input type="hidden" name="title" value={p.title} />
+                        <button className="btn btn-gold" style={{ padding: '4px 12px', fontSize: 13 }}>אישור ופרסום לכל הדיירים</button>
+                      </form>
+                    )}
+                    <form action={deletePost}>
+                      <input type="hidden" name="id" value={p.id} />
+                      <button className="btn btn-light" style={{ padding: '4px 12px', fontSize: 13 }}>מחיקה</button>
+                    </form>
+                  </div>
                 )}
               </div>
             )

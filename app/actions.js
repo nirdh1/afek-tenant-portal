@@ -34,9 +34,14 @@ export async function createPost(_prev, f) {
   }
   const { error } = await supabase.from('posts').insert(row)
   if (error) return { error: 'הפרסום נכשל' }
-  await log(supabase, row.visibility === 'private' ? 'פרסם הודעה פרטית' : 'פרסם הודעה', title)
-  revalidatePath('/board'); revalidatePath('/')
-  return { ok: row.to_lawyers ? 'נשלח. עורכי הדין יראו את ההודעה בלוח.' : 'פורסם' }
+  const { data: me } = await supabase.rpc('my_role')
+  const staff = me === 'admin' || me === 'lawyer'
+  await log(supabase, staff ? 'פרסם הודעה' : 'שלח הודעה', title)
+  revalidatePath('/board'); revalidatePath('/'); revalidatePath('/admin')
+  if (staff) return { ok: 'פורסם' }
+  return { ok: row.visibility === 'public'
+    ? 'ההודעה נשלחה ותתפרסם לכל הדיירים אחרי אישור הנציגות.'
+    : 'ההודעה נשלחה. רק הנציגות' + (row.to_lawyers ? ' ועורכי הדין' : '') + ' יראו אותה.' }
 }
 
 export async function createReply(f) {
@@ -48,6 +53,21 @@ export async function createReply(f) {
   await supabase.from('replies').insert({ post_id: postId, body, visibility })
   await log(supabase, visibility === 'private' ? 'ענה באופן פרטי' : 'ענה פומבית', val(f, 'post_title'))
   revalidatePath('/board')
+}
+
+// פרסום הודעה או תגובה של דייר לכל הדיירים (מנהל בלבד, נאכף במסד הנתונים)
+export async function approvePost(f) {
+  const supabase = await createClient()
+  await supabase.from('posts').update({ approved: true, visibility: 'public' }).eq('id', num(f, 'id'))
+  await log(supabase, 'אישר פרסום הודעה', val(f, 'title'))
+  revalidatePath('/board'); revalidatePath('/admin')
+}
+
+export async function approveReply(f) {
+  const supabase = await createClient()
+  await supabase.from('replies').update({ approved: true, visibility: 'public' }).eq('id', num(f, 'id'))
+  await log(supabase, 'אישר פרסום תגובה', val(f, 'title'))
+  revalidatePath('/board'); revalidatePath('/admin')
 }
 
 export async function deletePost(f) {
@@ -109,23 +129,37 @@ export async function updateProfile(f) {
   revalidatePath('/admin')
 }
 
-// אישור בקשת הרשמה: יוצר הרשאת כניסה לדייר עם הדירה שנבחרה
+// אישור בקשת הרשמה: משייך את הדייר לדירה קיימת, או יוצר דירה חדשה לפי הכתובת
 export async function approveRequest(f) {
   const supabase = await createClient()
   const { data: r } = await supabase.from('registration_requests').select('*').eq('id', num(f, 'id')).single()
   if (!r) return
   const email = (r.email || '').toLowerCase()
-  const row = { email, phone: r.phone, full_name: r.full_name, role: 'tenant', apartment_id: num(f, 'apartment_id') }
-  await supabase.from('invites').upsert(row)
-  await supabase.from('profiles').update({ role: 'tenant', apartment_id: row.apartment_id, full_name: r.full_name }).eq('email', email)
-  await supabase.from('registration_requests').update({ handled: true }).eq('id', r.id)
+  let aptId = num(f, 'apartment_id')
+  if (!aptId) {
+    const building = val(f, 'building'), unit = val(f, 'unit')
+    if (!building || !unit) return
+    const { data: apt } = await supabase.from('apartments')
+      .upsert({ building, unit }, { onConflict: 'building,unit' }).select('id').single()
+    aptId = apt?.id
+    if (aptId) await log(supabase, 'הוסיף דירה', `${building} / ${unit}`)
+  }
+  // לא מורידים הרשאה של מנהל או עורך דין שנרשם גם כדייר
+  const { data: existing } = await supabase.from('invites').select('role').eq('email', email).maybeSingle()
+  const { data: prof } = await supabase.from('profiles').select('role').eq('email', email).maybeSingle()
+  const keep = [existing?.role, prof?.role].find((x) => x === 'admin' || x === 'lawyer')
+  const role = keep || 'tenant'
+  await supabase.from('invites').upsert({ email, phone: r.phone, full_name: r.full_name, role, apartment_id: aptId })
+  await supabase.from('profiles').update({ role, apartment_id: aptId, full_name: r.full_name, phone: r.phone }).eq('email', email)
+  await supabase.from('registration_requests').update({ handled: true, status: 'approved' }).eq('id', r.id)
   await log(supabase, 'אישר בקשת הרשמה', `${r.full_name} ${email}`)
-  revalidatePath('/admin')
+  revalidatePath('/admin'); revalidatePath('/admin/users')
 }
 
 export async function markRequestHandled(f) {
   const supabase = await createClient()
-  await supabase.from('registration_requests').update({ handled: true }).eq('id', num(f, 'id'))
+  await supabase.from('registration_requests').update({ handled: true, status: 'rejected' }).eq('id', num(f, 'id'))
+  await log(supabase, 'דחה בקשת הרשמה', val(f, 'label'))
   revalidatePath('/admin')
 }
 
@@ -145,7 +179,7 @@ export async function uploadDocument(_prev, f) {
   })
   if (error) { await supabase.storage.from('documents').remove([path]); return { error: 'השמירה נכשלה' } }
   await log(supabase, 'העלה מסמך', title)
-  revalidatePath('/admin'); if (aptId) revalidatePath(`/admin/apartments/${aptId}`)
+  revalidatePath('/admin'); revalidatePath('/binder'); if (aptId) revalidatePath(`/admin/apartments/${aptId}`)
   return { ok: 'המסמך הועלה' }
 }
 
@@ -156,7 +190,7 @@ export async function deleteDocument(f) {
   await supabase.storage.from('documents').remove([doc.storage_path])
   await supabase.from('documents').delete().eq('id', doc.id)
   await log(supabase, 'מחק מסמך', doc.title)
-  revalidatePath('/admin'); if (doc.apartment_id) revalidatePath(`/admin/apartments/${doc.apartment_id}`)
+  revalidatePath('/admin'); revalidatePath('/binder'); if (doc.apartment_id) revalidatePath(`/admin/apartments/${doc.apartment_id}`)
 }
 
 export async function createMeeting(_prev, f) {
@@ -170,14 +204,28 @@ export async function createMeeting(_prev, f) {
   })
   if (error) return { error: 'השמירה נכשלה' }
   await log(supabase, 'פרסם מפגש', val(f, 'title'))
-  revalidatePath('/'); revalidatePath('/admin')
+  revalidatePath('/'); revalidatePath('/admin'); revalidatePath('/admin/events')
   return { ok: 'המפגש פורסם' }
+}
+
+export async function updateMeeting(_prev, f) {
+  const supabase = await createClient()
+  const date = val(f, 'date'), time = val(f, 'time') || '19:00'
+  if (!val(f, 'title') || !date) return { error: 'נא להזין שם ותאריך' }
+  const { error } = await supabase.from('meetings').update({
+    title: val(f, 'title'), starts_at: `${date} ${time}:00 Asia/Jerusalem`, location: val(f, 'location'), notes: val(f, 'notes'),
+  }).eq('id', num(f, 'id'))
+  if (error) return { error: 'השמירה נכשלה' }
+  await log(supabase, 'עדכן מפגש', val(f, 'title'))
+  revalidatePath('/'); revalidatePath('/admin'); revalidatePath('/admin/events')
+  return { ok: 'נשמר' }
 }
 
 export async function deleteMeeting(f) {
   const supabase = await createClient()
   await supabase.from('meetings').delete().eq('id', num(f, 'id'))
-  revalidatePath('/'); revalidatePath('/admin')
+  await log(supabase, 'מחק מפגש', val(f, 'title'))
+  revalidatePath('/'); revalidatePath('/admin'); revalidatePath('/admin/events')
 }
 
 export async function updateStatus(_prev, f) {
