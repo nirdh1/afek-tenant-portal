@@ -1,5 +1,6 @@
 'use client'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import * as A from '@/app/actions'
 import { DOC_CATEGORIES, OCCUPANCY, ROLES, STAGES } from '@/lib/labels'
 import FormStatus from './FormStatus'
@@ -70,20 +71,42 @@ export function InviteForm({ apartments, apartmentId }) {
 }
 
 export function UploadForm({ apartmentId, category }) {
-  const [state, action, pending] = useForm(A.uploadDocument)
+  const [state, setState] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [formKey, setFormKey] = useState(0)
+
+  async function submit(e) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const file = f.get('file')
+    if (!file || !file.size) { setState({ error: 'נא לבחור קובץ' }); return }
+    if (file.size > 50 * 1024 * 1024) { setState({ error: 'הקובץ גדול מ-50MB. אפשר לכווץ אותו או לפצל לכמה קבצים.' }); return }
+    setBusy(true); setState(null)
+    const ext = (file.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf'
+    const path = `${apartmentId ? 'apt-' + apartmentId : 'general'}/${crypto.randomUUID()}.${ext}`
+    const { error } = await createClient().storage.from('documents').upload(path, file, { contentType: file.type || 'application/pdf' })
+    if (error) { setBusy(false); setState({ error: 'ההעלאה נכשלה: ' + error.message }); return }
+    const res = await A.registerDocument({
+      apartment_id: apartmentId || null, category: category || f.get('category'), title: f.get('title'),
+      file_name: file.name, path, is_public: category ? true : f.get('is_public') === 'on',
+    })
+    setBusy(false); setState(res)
+    if (res?.ok) setFormKey((k) => k + 1)
+  }
+
   return (
-    <form action={action} key={state?.ok}>
-      {apartmentId && <input type="hidden" name="apartment_id" value={apartmentId} />}
-      {category ? <><input type="hidden" name="category" value={category} /><input type="hidden" name="is_public" value="on" /></> : <>
-      <label htmlFor="doc-cat">סוג מסמך</label>
-      <select id="doc-cat" name="category" defaultValue={apartmentId ? 'nesach' : 'presentation'}>
-        {Object.entries(DOC_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-      </select></>}
-      <label htmlFor="doc-title">שם המסמך</label><input id="doc-title" name="title" placeholder="נסח טאבו 10.2026" />
-      <label htmlFor="doc-file">קובץ</label><input id="doc-file" name="file" type="file" required />
+    <form onSubmit={submit} key={formKey}>
+      {!category && <>
+        <label htmlFor="doc-cat">סוג מסמך</label>
+        <select id="doc-cat" name="category" defaultValue={apartmentId ? 'nesach' : 'presentation'}>
+          {Object.entries(DOC_CATEGORIES).filter(([k]) => k !== 'binder').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </>}
+      <label htmlFor="doc-title">שם המסמך</label><input id="doc-title" name="title" placeholder={category === 'binder' ? 'אוגדן דיירים – נובמבר 2026' : 'נסח טאבו 10.2026'} />
+      <label htmlFor="doc-file">קובץ</label><input id="doc-file" name="file" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
       {!apartmentId && !category && <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input type="checkbox" name="is_public" defaultChecked style={{ width: 'auto' }} /> גלוי לכל הדיירים המאומתים</label>}
-      <div className="row"><button className="btn btn-navy" disabled={pending}>העלאה</button></div>
+        <input type="checkbox" name="is_public" defaultChecked style={{ width: 'auto' }} /> גלוי לכל הדיירים המאושרים</label>}
+      <div className="row"><button className="btn btn-navy" disabled={busy}>{busy ? 'מעלה... (קובץ גדול יכול לקחת דקה)' : 'העלאה'}</button></div>
       <FormStatus state={state} />
     </form>
   )

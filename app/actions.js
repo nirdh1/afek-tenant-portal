@@ -171,21 +171,16 @@ export async function markRequestHandled(f) {
   revalidatePath('/admin')
 }
 
-export async function uploadDocument(_prev, f) {
+// רישום מסמך אחרי שהקובץ הועלה ישירות מהדפדפן לאחסון (כך אין מגבלת גודל של השרת)
+export async function registerDocument(meta) {
   const supabase = await createClient()
-  const file = f.get('file')
-  if (!file || !file.size) return { error: 'נא לבחור קובץ' }
-  const aptId = num(f, 'apartment_id')
-  const ext = (file.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `${aptId ? 'apt-' + aptId : 'general'}/${crypto.randomUUID()}.${ext}`
-  const { error: upErr } = await supabase.storage.from('documents').upload(path, file, { contentType: file.type })
-  if (upErr) return { error: 'ההעלאה נכשלה' }
-  const title = val(f, 'title') || file.name
+  const aptId = meta.apartment_id ? Number(meta.apartment_id) : null
+  const title = String(meta.title || '').trim() || meta.file_name || 'מסמך'
   const { error } = await supabase.from('documents').insert({
-    apartment_id: aptId, category: val(f, 'category') || 'other', title, storage_path: path,
-    is_public: !aptId && f.get('is_public') === 'on',
+    apartment_id: aptId, category: meta.category || 'other', title, storage_path: meta.path,
+    is_public: !aptId && !!meta.is_public,
   })
-  if (error) { await supabase.storage.from('documents').remove([path]); return { error: 'השמירה נכשלה' } }
+  if (error) { await supabase.storage.from('documents').remove([meta.path]); return { error: 'השמירה נכשלה' } }
   await log(supabase, 'העלה מסמך', title)
   revalidatePath('/admin'); revalidatePath('/binder'); if (aptId) revalidatePath(`/admin/apartments/${aptId}`)
   return { ok: 'המסמך הועלה' }
